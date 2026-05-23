@@ -1,0 +1,26 @@
+ticker: IREN
+spot: null
+targets: [150, 450, 700]
+leverage: 2.0
+horizon_years: 1.0
+windows: [20, 60, 120]
+ewma_lambda: 0.94
+generator: bootstrap        # bootstrap | gbm
+block_size: 15              # bootstrap block (business days)
+regime: base                # low | base | high  (25/50/75 percentile of full rolling-σ dist)
+drift_scenario: 0.0         # annual log drift — scenario knob, NOT an estimate
+financing_rate: 0.0         # c (annual)
+expense_ratio: 0.0          # φ (annual)
+mc_sims: 20000
+mc_days: 252
+band_pct: 0.05              # terminal-conditioning K band (±5%)
+impair_threshold: 0.05      # L_0-relative impairment threshold
+seed: 42
+theme: dark
+
+site:
+  base_path: "/iren-lev-breakeven"
+  title: "IREN 2x Leverage Breakeven"
+  data_source: snapshot     # snapshot | live
+  refresh_cron: "0 21 * * 1-5"
+  interactive_panel: true

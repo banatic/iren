@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{TITLE}}</title>
+  <meta property="og:title" content="{{TITLE}}">
+  <meta property="og:description" content="Drift-free breakeven volatility analysis for 2x daily-rebalanced {{TICKER}}.">
+  <meta property="og:image" content="./assets/breakeven_map.png">
+  <link rel="stylesheet" href="./assets/styles.css">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+  <header>
+    <div class="banner">
+      <strong>Personal analysis · not investment advice ·</strong>
+      data as of <time>{{ASOF}}</time> · built {{BUILT_AT}}
+    </div>
+    <h1>{{TITLE}}</h1>
+    <p class="lede">
+      When does a daily-rebalanced 2x position on {{TICKER}} (spot ${{SPOT}})
+      beat buying and holding the underlying? The answer depends on the
+      <em>realized</em> volatility along the path and the holding period — not on
+      anyone's drift forecast. This page makes that surface visible and
+      lets you slide the inputs.
+    </p>
+    <p class="lede small">
+      Empirical volatility regimes (from rolling σ quantiles):
+      σ<sub>low</sub>={{REGIME_LOW}}, σ<sub>base</sub>={{REGIME_BASE}},
+      σ<sub>high</sub>={{REGIME_HIGH}}.
+    </p>
+  </header>
+
+  <main>
+    <section id="interactive">
+      <h2>1 · Breakeven volatility — interactive</h2>
+      <p>
+        Closed-form (continuous rebalancing). Drag the sliders to recompute
+        σ<sub>be</sub> for any (target, holding period). Above the curve =
+        2x wins; below = 1x wins.
+      </p>
+      <div class="controls">
+        <label>Target K ($)
+          <input type="range" id="ctl-K" min="20" max="800" step="5" value="150">
+          <output id="out-K">150</output>
+        </label>
+        <label>Holding period T (years)
+          <input type="range" id="ctl-T" min="0.1" max="3" step="0.05" value="1">
+          <output id="out-T">1.00</output>
+        </label>
+        <label>Realized σ (annual)
+          <input type="range" id="ctl-sigma" min="0.05" max="2.5" step="0.01" value="0.95">
+          <output id="out-sigma">0.95</output>
+        </label>
+        <label>Financing c (annual)
+          <input type="range" id="ctl-c" min="0" max="0.15" step="0.005" value="0">
+          <output id="out-c">0.000</output>
+        </label>
+        <label>Expense φ (annual)
+          <input type="range" id="ctl-phi" min="0" max="0.05" step="0.001" value="0">
+          <output id="out-phi">0.000</output>
+        </label>
+        <label>Leverage β
+          <input type="range" id="ctl-beta" min="1.5" max="3" step="0.1" value="2">
+          <output id="out-beta">2.0</output>
+        </label>
+      </div>
+      <div class="readouts">
+        <div>σ<sub>be</sub>(K,T) = <strong id="rd-sigma-be">—</strong></div>
+        <div>L<sub>T</sub>/L<sub>0</sub> = <strong id="rd-LT">—</strong>
+             vs S<sub>T</sub>/S<sub>0</sub> = <strong id="rd-ST">—</strong></div>
+        <div>Verdict: <strong id="rd-verdict">—</strong></div>
+      </div>
+      <div id="plot-curve" class="plot"></div>
+      <p class="caption">
+        Backend regression check: σ_be at the default horizon = {{BE_SAMPLE_JSON}}.
+        Client-side JS must agree with the Python reference to ±1e-6.
+      </p>
+    </section>
+
+    <section>
+      <h2>2 · Breakeven map: holding period × target</h2>
+      <img src="./assets/breakeven_map.png" alt="Breakeven map (T × K)">
+      <p class="caption">Coloured at σ_base. White contour = tie. Horizon often dominates target.</p>
+    </section>
+
+    <section>
+      <h2>3 · Volatility regimes over time</h2>
+      <img src="./assets/vol_drift_timeseries.png" alt="Rolling volatility timeseries">
+      <p class="caption">Rolling 20/60/120-day annualized σ + EWMA, with regime quantile bands.</p>
+    </section>
+
+    <section>
+      <h2>4 · Same destination, different paths</h2>
+      <img src="./assets/named_paths.png" alt="Named paths comparison">
+      <p class="caption">
+        Three deterministic paths landing at the same K. Discrete daily
+        rebalancing breaks the QV-only tie that holds in continuous time.
+      </p>
+    </section>
+
+    <section>
+      <h2>5 · Terminal-conditioned dispersion + impairment</h2>
+      <img src="./assets/conditional_dispersion.png" alt="Conditional dispersion">
+      <p class="caption">
+        Bootstrap MC, conditioned on reaching each K band. Drift is
+        non-identifiable on IREN, so unconditional reach probabilities are
+        not reported — only the among-arrivals 2x vs 1x dispersion and the
+        share of paths that suffered NAV impairment along the way.
+      </p>
+    </section>
+
+    <section id="method">
+      <h2>Method &amp; limits</h2>
+      <ul>
+        <li>Continuous-time identity:
+            L<sub>T</sub>/L<sub>0</sub> = (S<sub>T</sub>/S<sub>0</sub>)<sup>β</sup>
+            · exp(−½(β²−β)·QV − (β−1)cT − φT).</li>
+        <li>Breakeven (β=2, no fees): σ<sub>be</sub>(K, T) = √(ln(K/S₀) / T).</li>
+        <li>Ground truth is the discrete daily rebalance simulator — closed-form
+            is used for the interactive panel and as a continuous-limit sanity check.</li>
+        <li>Drift μ is not estimated (its standard error swamps the point estimate
+            on IREN's short history). All MC statistics are conditioned on K-arrival.</li>
+        <li>Block bootstrap preserves IREN's fat tails and vol clustering; we
+            also show low/base/high regimes from the rolling-σ quantiles.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      Data via <code>yfinance</code> (Yahoo Finance). Personal, non-commercial
+      analysis. Not investment advice.
+    </p>
+  </footer>
+
+  <script src="./assets/breakeven.js"></script>
+</body>
+</html>

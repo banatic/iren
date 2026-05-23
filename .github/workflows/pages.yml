@@ -1,0 +1,83 @@
+name: Build & deploy site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "web/**"
+      - "data_snapshot/**"
+      - "config.yaml"
+      - "pyproject.toml"
+      - ".github/workflows/pages.yml"
+  schedule:
+    # Daily after US market close (21:00 UTC, weekdays). Keeps the snapshot fresh
+    # when config.yaml has site.data_source: live; otherwise it just rebuilds.
+    - cron: "0 21 * * 1-5"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # only needed when site.data_source=live writes a snapshot
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Sync deps
+        run: uv sync --extra dev
+
+      - name: Tests (regression-gated build)
+        run: uv run pytest -q
+
+      - name: Refresh snapshot (best-effort, only on live data source)
+        id: snapshot
+        continue-on-error: true
+        run: |
+          if grep -q "data_source: live" config.yaml; then
+            uv run ilb fetch --refresh --snapshot
+          else
+            echo "snapshot source mode — skipping live fetch"
+          fi
+
+      - name: Commit refreshed snapshot
+        if: ${{ steps.snapshot.outcome == 'success' && github.event_name == 'schedule' }}
+        continue-on-error: true
+        run: |
+          if [[ -n "$(git status --porcelain data_snapshot/)" ]]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data_snapshot/
+            git commit -m "chore(data): refresh IREN snapshot"
+            git push
+          fi
+
+      - name: Build site
+        run: uv run ilb build-site --outdir site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
