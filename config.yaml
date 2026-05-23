@@ -19,7 +19,7 @@ seed: 42
 theme: dark
 
 site:
-  base_path: "/iren-lev-breakeven"
+  base_path: "/iren"
   title: "IREN 2x Leverage Breakeven"
   data_source: snapshot     # snapshot | live
   refresh_cron: "0 21 * * 1-5"
