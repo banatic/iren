@@ -23,10 +23,13 @@
 
   const ids = ["K", "T", "sigma", "c", "phi", "beta"];
   const els = {};
-  ids.forEach(id => {
-    els[id] = document.getElementById("ctl-" + id);
-    els["out-" + id] = document.getElementById("out-" + id);
-  });
+
+  function resolveEls() {
+    ids.forEach(id => {
+      els[id] = document.getElementById("ctl-" + id);
+      els["out-" + id] = document.getElementById("out-" + id);
+    });
+  }
 
   async function loadInputs() {
     try {
@@ -37,6 +40,30 @@
   }
 
   function fmtPct(x) { return (100 * x).toFixed(2) + "%"; }
+
+  const I18N = {
+    en: {
+      verdict2x: pct => `2x wins by ${pct}`,
+      verdict1x: pct => `1x wins by ${pct}`,
+      tie: "tie",
+      curveTitle: (T, beta) => `Breakeven curves at T=${T.toFixed(2)}y, β=${beta}`,
+      xAxis: "realized annualized σ",
+      yAxis: "L_T/L_0  ÷  S_T/S_0",
+      todayMarker: (w, sig, K) => `today σ_${w}d=${sig.toFixed(2)} · K=$${K}`,
+      tieTrace: "tie",
+    },
+    ko: {
+      verdict2x: pct => `2x 우세 ${pct}`,
+      verdict1x: pct => `1x 우세 ${pct}`,
+      tie: "동률",
+      curveTitle: (T, beta) => `T=${T.toFixed(2)}년, β=${beta}에서 손익분기 곡선`,
+      xAxis: "실현 연율 σ",
+      yAxis: "L_T/L_0  ÷  S_T/S_0",
+      todayMarker: (w, sig, K) => `오늘 σ_${w}일=${sig.toFixed(2)} · K=$${K}`,
+      tieTrace: "동률",
+    },
+  };
+  function t() { return I18N[document.documentElement.lang === "ko" ? "ko" : "en"]; }
 
   function recompute(state) {
     const K = +els.K.value, T = +els.T.value, sigma = +els.sigma.value,
@@ -56,9 +83,10 @@
     document.getElementById("rd-sigma-be").textContent = sigmaBe.toFixed(4);
     document.getElementById("rd-LT").textContent = LT.toFixed(3);
     document.getElementById("rd-ST").textContent = ST.toFixed(3);
+    const L = t();
     const verdict = LT > ST
-      ? `2x wins by ${fmtPct(LT / ST - 1)}`
-      : (LT < ST ? `1x wins by ${fmtPct(ST / LT - 1)}` : "tie");
+      ? L.verdict2x(fmtPct(LT / ST - 1))
+      : (LT < ST ? L.verdict1x(fmtPct(ST / LT - 1)) : L.tie);
     document.getElementById("rd-verdict").textContent = verdict;
 
     drawCurve(state, T, c, phi, beta);
@@ -81,9 +109,10 @@
         x: sigmas, y: ratio, mode: "lines", name: `K=$${K} σ_be=${sigmaBe.toFixed(2)}`,
       };
     });
+    const L = t();
     traces.push({
       x: [0, 2.5], y: [1, 1], mode: "lines", line: {color: "#7a8696", dash: "dot"},
-      name: "tie", hoverinfo: "skip",
+      name: L.tieTrace, hoverinfo: "skip",
     });
 
     // Snapshot marker: σ_60d (or σ at the largest available window),
@@ -99,8 +128,8 @@
         x: [anchor.sigma], y: [yNow], mode: "markers",
         marker: {size: 12, color: "#7ce0a4", line: {color: "#0a0e14", width: 2},
                  symbol: "circle"},
-        name: `today σ_${anchor.window}d=${anchor.sigma.toFixed(2)} · K=$${Kcur}`,
-        hovertemplate: `today σ_${anchor.window}d=%{x:.3f}<br>L_T/L_0 ÷ S_T/S_0=%{y:.3f}<extra></extra>`,
+        name: L.todayMarker(anchor.window, anchor.sigma, Kcur),
+        hovertemplate: `σ=%{x:.3f}<br>L_T/L_0 ÷ S_T/S_0=%{y:.3f}<extra></extra>`,
       });
     }
 
@@ -122,10 +151,9 @@
                    line: {color: "#7ce0a4", width: 1, dash: "dash"}});
     }
     Plotly.react("plot-curve", traces, {
-      title: {text: `Breakeven curves at T=${T.toFixed(2)}y, β=${beta}`,
-              font: {size: 14, color: "#c2c9d4"}},
-      xaxis: {title: "realized annualized σ", gridcolor: "#1f2731", zerolinecolor: "#2a3441"},
-      yaxis: {title: "L_T/L_0  ÷  S_T/S_0", gridcolor: "#1f2731", zerolinecolor: "#2a3441"},
+      title: {text: L.curveTitle(T, beta), font: {size: 14, color: "#c2c9d4"}},
+      xaxis: {title: L.xAxis, gridcolor: "#1f2731", zerolinecolor: "#2a3441"},
+      yaxis: {title: L.yAxis, gridcolor: "#1f2731", zerolinecolor: "#2a3441"},
       shapes: shapes,
       template: "plotly_dark",
       margin: {t: 40, l: 60, r: 20, b: 50},
@@ -160,6 +188,7 @@
   }
 
   async function init() {
+    resolveEls();
     const state = (await loadInputs()) || {spot: 58, targets: [150, 450, 700]};
     if (state.spot) {
       // Re-anchor the K slider around the current spot
@@ -170,6 +199,15 @@
     paintSnapshot(state);
     ids.forEach(id => els[id].addEventListener("input", () => recompute(state)));
     recompute(state);
+
+    // i18n swaps innerHTML of containers, which can recreate child nodes (the
+    // snap-pct spans live inside translated snap-subs). Re-paint + recompute on
+    // every lang change so percentile values, verdict text, and Plotly labels
+    // all stay current.
+    document.addEventListener("langchange", () => {
+      paintSnapshot(state);
+      recompute(state);
+    });
   }
   document.addEventListener("DOMContentLoaded", init);
 

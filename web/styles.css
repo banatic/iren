@@ -20,8 +20,8 @@
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
-html, body { margin: 0; background: var(--bg); color: var(--text); }
+html { scroll-behavior: smooth; background: var(--bg); }
+html, body { margin: 0; color: var(--text); }
 
 body {
   font-family: var(--sans);
@@ -30,10 +30,74 @@ body {
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
   min-height: 100vh;
+  /* No body background: keeps html's bg as the canvas so the fixed .aurora
+     (z-index: -1) paints between html and body content. Adding background
+     or position: relative on body would create a stacking context that
+     traps the aurora behind body's own background. */
+}
+
+/* IREN-style slow aurora behind everything. Pinned via fixed so it doesn't
+   contribute to layout/scroll, lives in its own stacking context (z:-1). */
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(124, 224, 164, 0.10), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 90% 30%, rgba(124, 224, 164, 0.04), transparent 60%),
-    var(--bg);
+    radial-gradient(ellipse 60% 35% at 20% 10%, rgba(124, 224, 164, 0.06), transparent 70%),
+    radial-gradient(ellipse 40% 30% at 80% 90%, rgba(94, 200, 230, 0.04), transparent 70%);
+}
+.aurora-blob {
+  position: absolute;
+  width: 56vmax;
+  height: 56vmax;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.55;
+  will-change: transform;
+  mix-blend-mode: screen;
+}
+.aurora-blob.b1 {
+  top: -18%; left: -12%;
+  background: radial-gradient(circle, rgba(124, 224, 164, 0.55), transparent 65%);
+  animation: drift-1 26s ease-in-out infinite alternate;
+}
+.aurora-blob.b2 {
+  top: 8%; right: -22%;
+  background: radial-gradient(circle, rgba(94, 200, 230, 0.42), transparent 65%);
+  animation: drift-2 32s ease-in-out infinite alternate;
+}
+.aurora-blob.b3 {
+  bottom: -28%; left: 18%;
+  background: radial-gradient(circle, rgba(124, 224, 164, 0.30), transparent 65%);
+  animation: drift-3 40s ease-in-out infinite alternate;
+}
+.aurora-blob.b4 {
+  top: 40%; left: 38%;
+  width: 38vmax; height: 38vmax;
+  background: radial-gradient(circle, rgba(180, 140, 240, 0.18), transparent 65%);
+  animation: drift-4 36s ease-in-out infinite alternate;
+  opacity: 0.4;
+}
+@keyframes drift-1 {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(18vw, 22vh, 0) scale(1.15); }
+}
+@keyframes drift-2 {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(-14vw, 18vh, 0) scale(1.1); }
+}
+@keyframes drift-3 {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(12vw, -20vh, 0) scale(1.2); }
+}
+@keyframes drift-4 {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(-10vw, -14vh, 0) scale(0.9); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aurora-blob { animation: none !important; }
 }
 
 em {
@@ -54,6 +118,42 @@ header {
   padding-bottom: 40px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 56px;
+  position: relative;
+}
+
+.lang-toggle {
+  position: absolute;
+  top: 24px;
+  right: 32px;
+  display: inline-flex;
+  background: rgba(19, 25, 34, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 3px;
+  gap: 2px;
+}
+.lang-toggle button {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+.lang-toggle button:hover { color: var(--text); }
+.lang-toggle button.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+@media (max-width: 540px) {
+  .lang-toggle { top: 16px; right: 20px; }
 }
 
 .banner {
