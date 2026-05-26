@@ -85,8 +85,32 @@
       x: [0, 2.5], y: [1, 1], mode: "lines", line: {color: "#7a8696", dash: "dot"},
       name: "tie", hoverinfo: "skip",
     });
+
+    // Snapshot marker: σ_60d (or σ at the largest available window),
+    // evaluated at the current K (slider) so the dot lives on its curve.
+    const sigNow = state.sigma_now || {};
+    const anchor = sigNow.d60 || sigNow.d120 || sigNow.d20;
+    if (anchor && typeof anchor.sigma === "number") {
+      const Kcur = +els.K.value;
+      const grossCur = Kcur / S0;
+      const qvNow = anchor.sigma * anchor.sigma * T;
+      const yNow = leveredTerminal(grossCur, qvNow, T, c, phi, beta) / grossCur;
+      traces.push({
+        x: [anchor.sigma], y: [yNow], mode: "markers",
+        marker: {size: 12, color: "#7ce0a4", line: {color: "#0a0e14", width: 2},
+                 symbol: "circle"},
+        name: `today σ_${anchor.window}d=${anchor.sigma.toFixed(2)} · K=$${Kcur}`,
+        hovertemplate: `today σ_${anchor.window}d=%{x:.3f}<br>L_T/L_0 ÷ S_T/S_0=%{y:.3f}<extra></extra>`,
+      });
+    }
+
     const reg = state.regimes || {};
     const shapes = [];
+    if (anchor && typeof anchor.sigma === "number") {
+      shapes.push({type: "line", xref: "x", yref: "paper",
+                   x0: anchor.sigma, x1: anchor.sigma, y0: 0, y1: 1,
+                   line: {color: "#7ce0a4", width: 1.5, dash: "solid"}});
+    }
     if (reg.low && reg.high) {
       shapes.push({type: "rect", xref: "x", yref: "paper",
                    x0: reg.low, x1: reg.high, y0: 0, y1: 1,
@@ -113,6 +137,28 @@
     }, {responsive: true, displaylogo: false});
   }
 
+  function paintSnapshot(state) {
+    const spot = state.spot;
+    const spotEl = document.getElementById("snap-spot");
+    if (spotEl && typeof spot === "number") spotEl.textContent = "$" + spot.toFixed(2);
+
+    const sn = state.sigma_now || {};
+    [20, 60, 120].forEach(w => {
+      const d = sn["d" + w];
+      const sig = document.getElementById("snap-sig" + w);
+      const pct = document.getElementById("snap-pct" + w);
+      const bar = document.getElementById("snap-bar" + w);
+      if (!d) {
+        if (sig) sig.textContent = "—";
+        if (pct) pct.textContent = "—";
+        return;
+      }
+      if (sig) sig.textContent = d.sigma.toFixed(2);
+      if (pct) pct.textContent = Math.round(d.pct * 100) + "th";
+      if (bar) bar.style.width = Math.max(2, Math.round(d.pct * 100)) + "%";
+    });
+  }
+
   async function init() {
     const state = (await loadInputs()) || {spot: 58, targets: [150, 450, 700]};
     if (state.spot) {
@@ -121,6 +167,7 @@
       els.K.value = Math.round(state.spot * 2.5);
       els["out-K"].textContent = els.K.value;
     }
+    paintSnapshot(state);
     ids.forEach(id => els[id].addEventListener("input", () => recompute(state)));
     recompute(state);
   }

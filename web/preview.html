@@ -37,6 +37,47 @@
   </header>
 
   <main>
+    <section id="snapshot">
+      <span class="section-num">00 · Snapshot</span>
+      <h2>Where IREN sits today</h2>
+      <p>
+        Current spot and recent realized σ at three windows, plus where each
+        sits in IREN's own historical distribution. <em>If</em> the next
+        T years look like the recent past, the marker on the curve below shows
+        where 2x lands relative to the breakeven verdict.
+      </p>
+      <div class="snapshot-grid">
+        <div class="snap-card">
+          <span class="snap-label">Spot</span>
+          <strong class="snap-value" id="snap-spot">$58.00</strong>
+          <span class="snap-sub">as of 2026-05-26</span>
+        </div>
+        <div class="snap-card" data-window="20">
+          <span class="snap-label">σ · 20d</span>
+          <strong class="snap-value" id="snap-sig20">—</strong>
+          <span class="snap-sub"><span id="snap-pct20">—</span> percentile</span>
+          <div class="snap-bar"><div class="snap-bar-fill" id="snap-bar20"></div></div>
+        </div>
+        <div class="snap-card highlight" data-window="60">
+          <span class="snap-label">σ · 60d <em>·anchor</em></span>
+          <strong class="snap-value" id="snap-sig60">—</strong>
+          <span class="snap-sub"><span id="snap-pct60">—</span> percentile</span>
+          <div class="snap-bar"><div class="snap-bar-fill" id="snap-bar60"></div></div>
+        </div>
+        <div class="snap-card" data-window="120">
+          <span class="snap-label">σ · 120d</span>
+          <strong class="snap-value" id="snap-sig120">—</strong>
+          <span class="snap-sub"><span id="snap-pct120">—</span> percentile</span>
+          <div class="snap-bar"><div class="snap-bar-fill" id="snap-bar120"></div></div>
+        </div>
+      </div>
+      <p class="caption">
+        Percentile is the share of historical rolling-σ observations at or
+        below today's reading. The 60d window anchors the marker on panel 01.
+        This is a snapshot, not a forecast — vol is non-stationary on IREN.
+      </p>
+    </section>
+
     <section id="interactive">
       <span class="section-num">01 · Interactive</span>
       <h2>Breakeven volatility</h2>
@@ -169,7 +210,12 @@
     // needing the build-time inputs.json next to it.
     (function () {
       const stub = { spot: 58, targets: [150, 450, 700],
-                     regimes: { low: 0.62, base: 0.95, high: 1.38 } };
+                     regimes: { low: 0.62, base: 0.95, high: 1.38 },
+                     sigma_now: {
+                       d20:  { sigma: 0.78, pct: 0.41, window: 20 },
+                       d60:  { sigma: 0.91, pct: 0.58, window: 60 },
+                       d120: { sigma: 1.04, pct: 0.71, window: 120 }
+                     } };
       const origFetch = window.fetch;
       window.fetch = function (input, init) {
         if (typeof input === "string" && input.endsWith("inputs.json")) {

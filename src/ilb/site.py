@@ -51,6 +51,20 @@ def _render(template: str, ctx: dict) -> str:
     return out
 
 
+def _sigma_now(returns, windows: list[int]) -> dict:
+    """Latest rolling σ per window + its percentile in the full historical distribution.
+    Frames the snapshot honestly: "today's vol vs everything we've seen", not a forecast."""
+    out: dict[str, dict] = {}
+    for w in windows:
+        s = rolling_sigma(returns, w).dropna()
+        if s.empty:
+            continue
+        latest = float(s.iloc[-1])
+        pct = float((s <= latest).mean())
+        out[f"d{w}"] = {"sigma": round(latest, 4), "pct": round(pct, 3), "window": w}
+    return out
+
+
 def _build_inputs(cfg: Config, df, spot: float, asof: date) -> dict:
     reg = regime_vols(rolling_sigma(df["log_return"], window=max(cfg.windows[0], 60)))
     horizons = list(np.linspace(0.25, 3.0, 28).round(4))
@@ -69,6 +83,7 @@ def _build_inputs(cfg: Config, df, spot: float, asof: date) -> dict:
         "financing_rate": cfg.financing_rate,
         "expense_ratio": cfg.expense_ratio,
         "regimes": {"low": reg.low, "base": reg.base, "high": reg.high},
+        "sigma_now": _sigma_now(df["log_return"], cfg.windows),
         "targets": list(map(float, cfg.targets)),
         "horizons": horizons,
         "target_grid": K_grid,
