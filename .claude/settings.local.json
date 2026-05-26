@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:iren.com)",
+      "Bash(uv run *)",
+      "PowerShell(uv run *)",
+      "PowerShell(python -m pytest tests/test_site.py -x --no-header -q 2>&1 | Select-Object -Last 30)",
+      "PowerShell(python -c \"import ilb\" 2>&1; python -c \"import sys; print\\(sys.executable\\)\")",
+      "PowerShell(Get-Command *)"
+    ]
+  }
+}

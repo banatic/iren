@@ -82,7 +82,7 @@
       };
     });
     traces.push({
-      x: [0, 2.5], y: [1, 1], mode: "lines", line: {color: "#888", dash: "dot"},
+      x: [0, 2.5], y: [1, 1], mode: "lines", line: {color: "#7a8696", dash: "dot"},
       name: "tie", hoverinfo: "skip",
     });
     const reg = state.regimes || {};
@@ -90,23 +90,25 @@
     if (reg.low && reg.high) {
       shapes.push({type: "rect", xref: "x", yref: "paper",
                    x0: reg.low, x1: reg.high, y0: 0, y1: 1,
-                   fillcolor: "rgba(255,165,0,0.10)", line: {width: 0}});
+                   fillcolor: "rgba(124,224,164,0.08)", line: {width: 0}});
     }
     if (reg.base) {
       shapes.push({type: "line", xref: "x", yref: "paper",
                    x0: reg.base, x1: reg.base, y0: 0, y1: 1,
-                   line: {color: "orange", width: 1, dash: "dash"}});
+                   line: {color: "#7ce0a4", width: 1, dash: "dash"}});
     }
     Plotly.react("plot-curve", traces, {
-      title: `Breakeven curves at T=${T.toFixed(2)}y, β=${beta}`,
-      xaxis: {title: "realized annualized σ"},
-      yaxis: {title: "L_T/L_0  ÷  S_T/S_0"},
+      title: {text: `Breakeven curves at T=${T.toFixed(2)}y, β=${beta}`,
+              font: {size: 14, color: "#c2c9d4"}},
+      xaxis: {title: "realized annualized σ", gridcolor: "#1f2731", zerolinecolor: "#2a3441"},
+      yaxis: {title: "L_T/L_0  ÷  S_T/S_0", gridcolor: "#1f2731", zerolinecolor: "#2a3441"},
       shapes: shapes,
       template: "plotly_dark",
       margin: {t: 40, l: 60, r: 20, b: 50},
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "rgba(0,0,0,0)",
-      font: {color: "#e8e8e8"},
+      font: {color: "#c2c9d4", family: "Inter, sans-serif"},
+      legend: {bgcolor: "rgba(0,0,0,0)", bordercolor: "#1f2731", borderwidth: 1},
       showlegend: true,
     }, {responsive: true, displaylogo: false});
   }
