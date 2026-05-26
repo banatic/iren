@@ -46,7 +46,6 @@
       verdict2x: pct => `2x wins by ${pct}`,
       verdict1x: pct => `1x wins by ${pct}`,
       tie: "tie",
-      curveTitle: (T, beta) => `Breakeven curves at T=${T.toFixed(2)}y, β=${beta}`,
       xAxis: "realized annualized σ",
       yAxis: "L_T/L_0  ÷  S_T/S_0",
       todayMarker: (w, sig, K) => `today σ_${w}d=${sig.toFixed(2)} · K=$${K}`,
@@ -56,7 +55,6 @@
       verdict2x: pct => `2x 우세 ${pct}`,
       verdict1x: pct => `1x 우세 ${pct}`,
       tie: "동률",
-      curveTitle: (T, beta) => `T=${T.toFixed(2)}년, β=${beta}에서 손익분기 곡선`,
       xAxis: "실현 연율 σ",
       yAxis: "L_T/L_0  ÷  S_T/S_0",
       todayMarker: (w, sig, K) => `오늘 σ_${w}일=${sig.toFixed(2)} · K=$${K}`,
@@ -84,10 +82,13 @@
     document.getElementById("rd-LT").textContent = LT.toFixed(3);
     document.getElementById("rd-ST").textContent = ST.toFixed(3);
     const L = t();
-    const verdict = LT > ST
-      ? L.verdict2x(fmtPct(LT / ST - 1))
-      : (LT < ST ? L.verdict1x(fmtPct(ST / LT - 1)) : L.tie);
+    let verdict, state2x;
+    if (LT > ST)      { verdict = L.verdict2x(fmtPct(LT / ST - 1)); state2x = "2x"; }
+    else if (LT < ST) { verdict = L.verdict1x(fmtPct(ST / LT - 1)); state2x = "1x"; }
+    else              { verdict = L.tie;                            state2x = "tie"; }
     document.getElementById("rd-verdict").textContent = verdict;
+    const pill = document.getElementById("verdict-pill");
+    if (pill) pill.setAttribute("data-state", state2x);
 
     drawCurve(state, T, c, phi, beta);
   }
@@ -151,25 +152,22 @@
                    line: {color: "#7ce0a4", width: 1, dash: "dash"}});
     }
     Plotly.react("plot-curve", traces, {
-      title: {text: L.curveTitle(T, beta), font: {size: 14, color: "#c2c9d4"}},
+      // Title intentionally omitted — slider outputs above already show T & β.
       xaxis: {title: L.xAxis, gridcolor: "#1f2731", zerolinecolor: "#2a3441"},
       yaxis: {title: L.yAxis, gridcolor: "#1f2731", zerolinecolor: "#2a3441"},
       shapes: shapes,
       template: "plotly_dark",
-      margin: {t: 40, l: 60, r: 20, b: 50},
+      margin: {t: 18, l: 60, r: 20, b: 50},
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "rgba(0,0,0,0)",
       font: {color: "#c2c9d4", family: "Inter, sans-serif"},
       legend: {bgcolor: "rgba(0,0,0,0)", bordercolor: "#1f2731", borderwidth: 1},
       showlegend: true,
-    }, {responsive: true, displaylogo: false});
+    }, {responsive: true, displayModeBar: false});
   }
 
   function paintSnapshot(state) {
-    const spot = state.spot;
-    const spotEl = document.getElementById("snap-spot");
-    if (spotEl && typeof spot === "number") spotEl.textContent = "$" + spot.toFixed(2);
-
+    // Spot lives in the header (build-time template substitution), not here.
     const sn = state.sigma_now || {};
     [20, 60, 120].forEach(w => {
       const d = sn["d" + w];

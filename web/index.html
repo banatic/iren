@@ -27,42 +27,45 @@
       <button type="button" data-lang="ko">KO</button>
     </div>
 
-    <div class="banner">
-      <strong data-ko="개인 분석">Personal analysis</strong>
-      <span data-ko="· 투자 자문 아님 ·">· not investment advice ·</span>
-      <span data-ko="데이터 기준일 {{ASOF}}">data as of <time>{{ASOF}}</time></span>
-      <span data-ko="· 빌드 {{BUILT_AT}}">· built {{BUILT_AT}}</span>
+    <div class="hero-context">
+      <span class="hc-ticker">{{TICKER}}</span>
+      <span class="hc-divider">/</span>
+      <span class="hc-spot">${{SPOT}}</span>
+      <span class="hc-date" data-ko="{{ASOF}} 기준">as of {{ASOF}}</span>
     </div>
-    <h1 data-ko="{{TICKER}}에서 <em>2x</em>가 <em>1x</em>를 이기는 조건은?">
-      When does <em>2x</em> beat <em>1x</em> on {{TICKER}}?
+
+    <h1 data-ko="<em>2x</em>가 <em>1x</em>를 이기는 조건은?">
+      When does <em>2x</em> beat <em>1x</em>?
     </h1>
-    <p class="lede" data-ko="{{TICKER}}(현재가 ${{SPOT}})을 일간 재조정 2x로 보유했을 때, 경로상의 <em>실현</em> 변동성이 목표가와 보유기간에 따라 결정되는 손익분기 곡선 아래에 머무를 때만 1x를 이깁니다. 누군가의 drift 예측이 아니라 그 표면 자체를 보여주고, 입력값을 직접 슬라이드해볼 수 있게 만든 페이지입니다.">
-      A daily-rebalanced 2x position on {{TICKER}} (spot ${{SPOT}}) wins only when
-      <em>realized</em> volatility along the path stays below a breakeven curve
-      that depends on the target and holding period — not on anyone's drift
-      forecast. This page makes that surface visible and lets you slide the inputs.
+    <p class="lede" data-ko="일간 재조정 2x 포지션은 경로상의 <em>실현</em> 변동성이 목표가와 보유기간에 따라 결정되는 손익분기 곡선 아래에 머무를 때만 1x를 이깁니다. 누군가의 drift 예측이 아니라 그 표면 자체를 보여주고, 입력값을 직접 슬라이드해볼 수 있게 만든 페이지입니다.">
+      A daily-rebalanced 2x position wins only when <em>realized</em> volatility
+      along the path stays below a breakeven curve that depends on the target and
+      holding period — not on anyone's drift forecast. This page makes that
+      surface visible and lets you slide the inputs.
     </p>
-    <p class="lede small">
-      σ<sub>low</sub> = {{REGIME_LOW}}  ·  σ<sub>base</sub> = {{REGIME_BASE}}  ·  σ<sub>high</sub> = {{REGIME_HIGH}}
-    </p>
+
+    <div class="meta-row">
+      <span class="disclaimer-pill" data-ko="개인 분석 · 투자 자문 아님">Personal analysis · not investment advice</span>
+      <span class="meta-sub">
+        <span data-ko="데이터 기준일">data as of</span> <time>{{ASOF}}</time>
+        ·
+        <span data-ko="빌드">built</span> {{BUILT_AT}}
+        ·
+        σ<sub>low</sub>={{REGIME_LOW}} · σ<sub>base</sub>={{REGIME_BASE}} · σ<sub>high</sub>={{REGIME_HIGH}}
+      </span>
+    </div>
   </header>
 
   <main>
-    <section id="snapshot">
-      <span class="section-num" data-ko="00 · 현재 상태">00 · Snapshot</span>
+    <section class="card" id="snapshot">
       <h2 data-ko="{{TICKER}}의 현재 위치">Where {{TICKER}} sits today</h2>
-      <p data-ko="현재 스팟과 세 가지 윈도우의 최근 실현 σ, 그리고 각 σ가 {{TICKER}} 자체 역사 분포에서 어디에 있는지를 보여줍니다. <em>만약</em> 향후 T년이 최근과 비슷하다면, 아래 곡선의 마커가 2x가 손익분기 평결에 비해 어디에 떨어지는지를 표시합니다.">
-        Current spot and recent realized σ at three windows, plus where each
-        sits in {{TICKER}}'s own historical distribution. <em>If</em> the next
-        T years look like the recent past, the marker on the curve below shows
-        where 2x lands relative to the breakeven verdict.
+      <p data-ko="세 가지 윈도우의 최근 실현 σ와 각 σ가 {{TICKER}} 역사 분포에서 어디에 있는지를 보여줍니다. <em>만약</em> 향후 T년이 최근과 비슷하다면, 아래 곡선의 마커가 2x가 손익분기 평결에 비해 어디에 떨어지는지를 표시합니다.">
+        Recent realized σ at three windows, plus where each sits in {{TICKER}}'s
+        own historical distribution. <em>If</em> the next T years look like the
+        recent past, the marker on the curve below shows where 2x lands relative
+        to the breakeven verdict.
       </p>
       <div class="snapshot-grid">
-        <div class="snap-card">
-          <span class="snap-label" data-ko="현재가">Spot</span>
-          <strong class="snap-value" id="snap-spot">${{SPOT}}</strong>
-          <span class="snap-sub" data-ko="{{ASOF}} 기준">as of {{ASOF}}</span>
-        </div>
         <div class="snap-card" data-window="20">
           <span class="snap-label" data-ko="σ · 20일">σ · 20d</span>
           <strong class="snap-value" id="snap-sig20">—</strong>
@@ -88,20 +91,22 @@
           <div class="snap-bar"><div class="snap-bar-fill" id="snap-bar120"></div></div>
         </div>
       </div>
-      <p class="caption" data-ko="백분위는 역사적 rolling-σ 관측치 중 오늘 수치 이하의 비율입니다. 60일 윈도우가 패널 01의 마커를 결정합니다. 예측이 아니라 스냅샷이며 — {{TICKER}}의 변동성은 비정상(non-stationary)입니다.">
-        Percentile is the share of historical rolling-σ observations at or
-        below today's reading. The 60d window anchors the marker on panel 01.
+      <p class="caption" data-ko="백분위는 역사적 rolling-σ 관측치 중 오늘 수치 이하의 비율. 60일 윈도우가 패널 아래 곡선의 마커를 결정합니다. 예측이 아니라 스냅샷이며 — {{TICKER}}의 변동성은 비정상(non-stationary)입니다.">
+        Percentile is the share of historical rolling-σ observations at or below
+        today's reading. The 60d window anchors the marker on the curve below.
         This is a snapshot, not a forecast — vol is non-stationary on {{TICKER}}.
       </p>
     </section>
 
-    <section id="interactive">
-      <span class="section-num" data-ko="01 · 인터랙티브">01 · Interactive</span>
+    <section class="card" id="interactive">
       <h2 data-ko="손익분기 변동성">Breakeven volatility</h2>
-      <p data-ko="닫힌형 식(연속 재조정 가정). 슬라이더를 움직여 임의의 (목표, 보유기간)에 대한 σ<sub>be</sub>를 다시 계산합니다. 곡선 위 = 2x 우세, 아래 = 1x 우세.">
-        Closed-form (continuous rebalancing). Drag the sliders to recompute
-        σ<sub>be</sub> for any (target, holding period). Above the curve =
-        2x wins; below = 1x wins.
+      <p class="caveat">
+        <span class="caveat-mark" data-ko="주의">Note</span>
+        <span data-ko="닫힌형 근사 · drift는 추정하지 않음 · σ는 시나리오이지 예측이 아님">closed-form approximation · drift not estimated · σ is a scenario, not a forecast</span>
+      </p>
+      <p data-ko="슬라이더를 움직여 임의의 (목표, 보유기간)에 대한 σ<sub>be</sub>를 다시 계산합니다. 곡선 위 = 2x 우세, 아래 = 1x 우세.">
+        Drag the sliders to recompute σ<sub>be</sub> for any (target, holding
+        period). Above the curve = 2x wins; below = 1x wins.
       </p>
       <div class="controls">
         <label>
@@ -135,12 +140,18 @@
           <output id="out-beta">2.0</output>
         </label>
       </div>
+
+      <div class="verdict-pill" id="verdict-pill" data-state="">
+        <span class="verdict-label" data-ko="평결">Verdict</span>
+        <strong class="verdict-value" id="rd-verdict">—</strong>
+      </div>
+
       <div class="readouts">
         <div><span data-ko="σ<sub>be</sub>(K,T)">σ<sub>be</sub>(K,T)</span><strong id="rd-sigma-be">—</strong></div>
         <div><span data-ko="L<sub>T</sub>/L<sub>0</sub>">L<sub>T</sub>/L<sub>0</sub></span><strong id="rd-LT">—</strong></div>
         <div><span data-ko="S<sub>T</sub>/S<sub>0</sub>">S<sub>T</sub>/S<sub>0</sub></span><strong id="rd-ST">—</strong></div>
-        <div><span data-ko="평결">Verdict</span><strong id="rd-verdict">—</strong></div>
       </div>
+
       <div id="plot-curve" class="plot"></div>
       <p class="caption">
         <span data-ko="백엔드 회귀 검증: 기본 보유기간에서 σ_be = ">Backend regression check: σ_be at the default horizon = </span><code>{{BE_SAMPLE_JSON}}</code><span data-ko=". 클라이언트 JS는 Python 레퍼런스와 ±1e-6까지 일치해야 합니다.">.
@@ -148,22 +159,19 @@
       </p>
     </section>
 
-    <section>
-      <span class="section-num" data-ko="02 · 맵">02 · Map</span>
+    <section class="figure">
       <h2 data-ko="손익분기 맵: 보유기간 × 목표가">Breakeven map: holding period × target</h2>
       <img src="./assets/breakeven_map.png" alt="Breakeven map (T × K)">
       <p class="caption" data-ko="σ_base 기준으로 색칠. 흰색 등고선 = 동률. 목표가보다 보유기간이 결정적인 경우가 많음.">Coloured at σ_base. White contour = tie. Horizon often dominates target.</p>
     </section>
 
-    <section>
-      <span class="section-num" data-ko="03 · 레짐">03 · Regimes</span>
+    <section class="figure">
       <h2 data-ko="시간에 따른 변동성 레짐">Volatility regimes over time</h2>
       <img src="./assets/vol_drift_timeseries.png" alt="Rolling volatility timeseries">
       <p class="caption" data-ko="20/60/120일 rolling 연율 σ + EWMA, 레짐 분위 밴드 포함.">Rolling 20/60/120-day annualized σ + EWMA, with regime quantile bands.</p>
     </section>
 
-    <section>
-      <span class="section-num" data-ko="04 · 경로">04 · Paths</span>
+    <section class="figure">
       <h2 data-ko="같은 도착점, 다른 경로">Same destination, different paths</h2>
       <img src="./assets/named_paths.png" alt="Named paths comparison">
       <p class="caption" data-ko="같은 K에 도달하는 세 가지 결정론적 경로. 일간 이산 재조정은 연속시간에서 성립하는 QV-only 동률을 깨뜨립니다.">
@@ -172,21 +180,19 @@
       </p>
     </section>
 
-    <section>
-      <span class="section-num" data-ko="05 · 분산">05 · Dispersion</span>
+    <section class="figure">
       <h2 data-ko="도달 조건부 분산 + 손상">Terminal-conditioned dispersion + impairment</h2>
       <img src="./assets/conditional_dispersion.png" alt="Conditional dispersion">
       <p class="caption" data-ko="Bootstrap MC, 각 K 밴드 도달 조건. {{TICKER}}에서 drift는 식별 불가능하므로 무조건적 도달 확률은 보고하지 않고, 도달한 경로 사이의 2x vs 1x 분산과 경로상 NAV 손상이 발생한 비율만 보여줍니다.">
         Bootstrap MC, conditioned on reaching each K band. Drift is
-        non-identifiable on IREN, so unconditional reach probabilities are
-        not reported — only the among-arrivals 2x vs 1x dispersion and the
-        share of paths that suffered NAV impairment along the way.
+        non-identifiable on {{TICKER}}, so unconditional reach probabilities are
+        not reported — only the among-arrivals 2x vs 1x dispersion and the share
+        of paths that suffered NAV impairment along the way.
       </p>
     </section>
 
-    <section id="method">
-      <span class="section-num" data-ko="06 · 방법론">06 · Method</span>
-      <h2 data-ko="방법론 &amp; 한계">Method &amp; limits</h2>
+    <details class="method" id="method">
+      <summary data-ko="방법론 &amp; 한계">Method &amp; limits</summary>
       <ul>
         <li data-ko="연속시간 항등식: L<sub>T</sub>/L<sub>0</sub> = (S<sub>T</sub>/S<sub>0</sub>)<sup>β</sup> · exp(−½(β²−β)·QV − (β−1)cT − φT).">Continuous-time identity:
             L<sub>T</sub>/L<sub>0</sub> = (S<sub>T</sub>/S<sub>0</sub>)<sup>β</sup>
@@ -195,11 +201,11 @@
         <li data-ko="ground truth는 일간 이산 재조정 시뮬레이터입니다 — 닫힌형 식은 인터랙티브 패널과 연속극한 sanity check 용도로만 사용합니다.">Ground truth is the discrete daily rebalance simulator — closed-form
             is used for the interactive panel and as a continuous-limit sanity check.</li>
         <li data-ko="Drift μ는 추정하지 않습니다 ({{TICKER}}의 짧은 역사에서 표준오차가 점추정치를 압도). 모든 MC 통계는 K 도달 조건부입니다.">Drift μ is not estimated (its standard error swamps the point estimate
-            on IREN's short history). All MC statistics are conditioned on K-arrival.</li>
-        <li data-ko="Block bootstrap이 {{TICKER}}의 fat tail과 변동성 클러스터링을 보존합니다. rolling-σ 분위수로부터 low/base/high 레짐도 함께 제시합니다.">Block bootstrap preserves IREN's fat tails and vol clustering; we
+            on {{TICKER}}'s short history). All MC statistics are conditioned on K-arrival.</li>
+        <li data-ko="Block bootstrap이 {{TICKER}}의 fat tail과 변동성 클러스터링을 보존합니다. rolling-σ 분위수로부터 low/base/high 레짐도 함께 제시합니다.">Block bootstrap preserves {{TICKER}}'s fat tails and vol clustering; we
             also show low/base/high regimes from the rolling-σ quantiles.</li>
       </ul>
-    </section>
+    </details>
   </main>
 
   <footer>
@@ -207,13 +213,16 @@
       Data via <code>yfinance</code> (Yahoo Finance). Personal, non-commercial
       analysis. Not investment advice.
     </p>
+    <p>
+      <a href="https://github.com/banatic/iren" rel="noopener" target="_blank">github</a>
+    </p>
   </footer>
 
   <script>
     // i18n: swap innerHTML between original (EN, saved on first load) and data-ko.
-    // Inline so the build pipeline doesn't need to copy a separate file. Containers
-    // that hold live nodes (inputs, dynamic <strong>) are kept untranslated; only
-    // pure-text inner spans carry data-ko.
+    // Skips reassignment when current innerHTML already matches the target — this
+    // both preserves children that weren't supposed to change and avoids any
+    // flash of replaced content.
     (function () {
       const ORIG = new WeakMap();
       function $$() { return document.querySelectorAll('[data-ko]'); }
@@ -222,7 +231,8 @@
         if (lang !== 'en' && lang !== 'ko') lang = 'en';
         $$().forEach(el => {
           if (!ORIG.has(el)) ORIG.set(el, el.innerHTML);
-          el.innerHTML = (lang === 'ko') ? el.getAttribute('data-ko') : ORIG.get(el);
+          const target = (lang === 'ko') ? el.getAttribute('data-ko') : ORIG.get(el);
+          if (el.innerHTML !== target) el.innerHTML = target;
         });
         document.documentElement.lang = lang;
         document.querySelectorAll('.lang-toggle button').forEach(b => {
