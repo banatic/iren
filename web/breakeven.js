@@ -41,6 +41,26 @@
 
   function fmtPct(x) { return (100 * x).toFixed(2) + "%"; }
 
+  // Portfolio panel — currency state and formatters.
+  // Currency is a display unit; numbers are used as-is (no FX conversion).
+  let currency = "USD";
+  function parseAmount(s) {
+    if (s == null) return 0;
+    const cleaned = String(s).replace(/[^0-9.]/g, "");
+    const n = parseFloat(cleaned);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  }
+  function fmtCurrency(v) {
+    if (!Number.isFinite(v)) return "—";
+    if (currency === "KRW") return "₩" + Math.round(v).toLocaleString("ko-KR");
+    return "$" + v.toLocaleString("en-US", {maximumFractionDigits: 0});
+  }
+  function fmtCurrencySigned(v) {
+    if (!Number.isFinite(v)) return "—";
+    const sign = v >= 0 ? "+" : "−";
+    return sign + fmtCurrency(Math.abs(v));
+  }
+
   const I18N = {
     en: {
       verdict2x: pct => `2x wins by ${pct}`,
@@ -50,6 +70,11 @@
       yAxis: "L_T/L_0  ÷  S_T/S_0",
       todayMarker: (w, sig, K) => `today σ_${w}d=${sig.toFixed(2)} · K=$${K}`,
       tieTrace: "tie",
+      pfTimeAxis: "holding period t (years)",
+      pfValueAxis: "portfolio value",
+      pf1xName: "1x position",
+      pf2xName: "2x position",
+      pfStartLine: "start",
     },
     ko: {
       verdict2x: pct => `2x 우세 ${pct}`,
@@ -59,6 +84,11 @@
       yAxis: "L_T/L_0  ÷  S_T/S_0",
       todayMarker: (w, sig, K) => `오늘 σ_${w}일=${sig.toFixed(2)} · K=$${K}`,
       tieTrace: "동률",
+      pfTimeAxis: "보유기간 t (년)",
+      pfValueAxis: "포트폴리오 평가액",
+      pf1xName: "1x 포지션",
+      pf2xName: "2x 포지션",
+      pfStartLine: "시작",
     },
   };
   function t() { return I18N[document.documentElement.lang === "ko" ? "ko" : "en"]; }
@@ -91,6 +121,81 @@
     if (pill) pill.setAttribute("data-state", state2x);
 
     drawCurve(state, T, c, phi, beta);
+    drawPortfolio(state, K, T, sigma, c, phi, beta);
+  }
+
+  function drawPortfolio(state, K, T, sigma, c, phi, beta) {
+    const assetEl = document.getElementById("ctl-asset");
+    if (!assetEl) return;
+    const asset = parseAmount(assetEl.value);
+    const S0 = state.spot;
+    if (!(S0 > 0) || !(T > 0)) return;
+
+    const gross = K / S0;
+    const N = 80;
+    const times = new Array(N + 1);
+    const v1x = new Array(N + 1);
+    const v2x = new Array(N + 1);
+    for (let i = 0; i <= N; i++) {
+      const tau = i / N;
+      const tHere = tau * T;
+      const stock = Math.pow(gross, tau);
+      const qv = sigma * sigma * tHere;
+      const lev = Math.pow(gross, beta * tau) * Math.exp(
+        -0.5 * (beta * beta - beta) * qv
+        - (beta - 1) * c * tHere
+        - phi * tHere
+      );
+      times[i] = tHere;
+      v1x[i]   = asset * stock;
+      v2x[i]   = asset * lev;
+    }
+
+    const end1x = v1x[N];
+    const end2x = v2x[N];
+    const edge = end2x - end1x;
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set("pr-start", fmtCurrency(asset));
+    set("pr-1x",    fmtCurrency(end1x));
+    set("pr-2x",    fmtCurrency(end2x));
+    set("pr-edge",  fmtCurrencySigned(edge));
+    const edgeEl = document.getElementById("pr-edge");
+    if (edgeEl) {
+      edgeEl.classList.toggle("positive", edge > 0);
+      edgeEl.classList.toggle("negative", edge < 0);
+    }
+
+    const L = t();
+    const hoverFmt = currency === "KRW" ? "₩%{y:,.0f}" : "$%{y:,.0f}";
+    Plotly.react("plot-portfolio", [
+      {
+        x: [0, T], y: [asset, asset], mode: "lines",
+        line: {color: "#2a3441", dash: "dot", width: 1},
+        name: L.pfStartLine, hoverinfo: "skip",
+      },
+      {
+        x: times, y: v1x, mode: "lines", name: L.pf1xName,
+        line: {color: "#7a8696", width: 2},
+        hovertemplate: `t=%{x:.2f}y<br>1x=${hoverFmt}<extra></extra>`,
+      },
+      {
+        x: times, y: v2x, mode: "lines", name: L.pf2xName,
+        line: {color: "#7ce0a4", width: 3},
+        hovertemplate: `t=%{x:.2f}y<br>2x=${hoverFmt}<extra></extra>`,
+      },
+    ], {
+      xaxis: {title: L.pfTimeAxis, gridcolor: "#1f2731", zerolinecolor: "#2a3441"},
+      yaxis: {title: L.pfValueAxis, gridcolor: "#1f2731", zerolinecolor: "#2a3441",
+              tickformat: ",", tickprefix: currency === "KRW" ? "₩" : "$"},
+      template: "plotly_dark",
+      margin: {t: 18, l: 90, r: 20, b: 50},
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "rgba(0,0,0,0)",
+      font: {color: "#c2c9d4", family: "Inter, sans-serif"},
+      legend: {bgcolor: "rgba(0,0,0,0)", bordercolor: "#1f2731", borderwidth: 1,
+               x: 0.02, y: 0.98},
+      showlegend: true,
+    }, {responsive: true, displayModeBar: false});
   }
 
   function drawCurve(state, T, c, phi, beta) {
@@ -196,6 +301,21 @@
     }
     paintSnapshot(state);
     ids.forEach(id => els[id].addEventListener("input", () => recompute(state)));
+
+    // Portfolio panel inputs: amount + currency toggle. Both feed into recompute
+    // (cheap — only redraws plot-portfolio, not the full surface).
+    const assetEl = document.getElementById("ctl-asset");
+    if (assetEl) assetEl.addEventListener("input", () => recompute(state));
+    document.querySelectorAll(".currency-toggle button").forEach(b => {
+      b.addEventListener("click", () => {
+        currency = b.dataset.cur === "KRW" ? "KRW" : "USD";
+        document.querySelectorAll(".currency-toggle button").forEach(o => {
+          o.classList.toggle("active", o.dataset.cur === currency);
+        });
+        recompute(state);
+      });
+    });
+
     recompute(state);
 
     // i18n swaps innerHTML of containers, which can recreate child nodes (the

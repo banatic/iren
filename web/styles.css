@@ -455,6 +455,116 @@ section img {
   padding: 8px;
 }
 
+/* Portfolio panel — asset input + currency toggle + value-over-time plot */
+.portfolio-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  margin: 16px 0 8px;
+  align-items: end;
+}
+.portfolio-input-row > label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.portfolio-input-row input[type="text"] {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 12px 16px;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  letter-spacing: 0;
+  text-transform: none;
+  width: 100%;
+}
+.portfolio-input-row input[type="text"]:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(124, 224, 164, 0.18);
+}
+.currency-toggle {
+  display: inline-flex;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+.currency-toggle button {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: color 0.18s ease, background 0.18s ease;
+  min-width: 44px;
+}
+.currency-toggle button:hover { color: var(--text); }
+.currency-toggle button.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.currency-toggle button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.portfolio-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin: 16px 0 8px;
+}
+.portfolio-results > div {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pr-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.pr-value {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.pr-value.pr-2x { color: var(--accent); }
+.pr-value.pr-edge.positive { color: var(--accent); }
+.pr-value.pr-edge.negative { color: var(--bad); }
+
+@media (max-width: 540px) {
+  .portfolio-input-row { grid-template-columns: 1fr; }
+  .currency-toggle { width: fit-content; }
+}
+
 /* Snapshot — 3 parallel σ window cards. Spot is no longer here; it lives in
    the header hero context. */
 .snapshot-grid {

@@ -159,6 +159,51 @@
       </p>
     </section>
 
+    <section class="card" id="portfolio">
+      <h2 data-ko="내 포지션의 경로">Your portfolio path</h2>
+      <p data-ko="현재 {{TICKER}} 포지션의 평가액을 입력하면, 패널 위의 K · T · σ 슬라이더 설정에서 시간에 따라 1x와 2x가 어떻게 갈리는지를 보여줍니다. 주가가 σ 변동성을 유지한 채 목표가 K로 향하는 결정론적 log-경로를 따른다고 가정합니다.">
+        Enter your current {{TICKER}} position value. Given the K · T · σ sliders
+        above, the plot projects 1x vs 2x portfolio value over time, assuming
+        the stock follows a deterministic log-path to target K at the chosen σ.
+      </p>
+      <div class="portfolio-input-row">
+        <label>
+          <span data-ko="현재 포지션">Your position</span>
+          <input type="text" id="ctl-asset" value="10000" inputmode="numeric"
+                 autocomplete="off" spellcheck="false">
+        </label>
+        <div class="currency-toggle" role="group" aria-label="Currency">
+          <button type="button" data-cur="USD" class="active">$</button>
+          <button type="button" data-cur="KRW">₩</button>
+        </div>
+      </div>
+      <div class="portfolio-results">
+        <div>
+          <span class="pr-label" data-ko="시작">Start</span>
+          <span class="pr-value" id="pr-start">—</span>
+        </div>
+        <div>
+          <span class="pr-label" data-ko="1x 최종">1x terminal</span>
+          <span class="pr-value pr-1x" id="pr-1x">—</span>
+        </div>
+        <div>
+          <span class="pr-label" data-ko="2x 최종">2x terminal</span>
+          <span class="pr-value pr-2x" id="pr-2x">—</span>
+        </div>
+        <div>
+          <span class="pr-label" data-ko="2x − 1x">2x edge</span>
+          <span class="pr-value pr-edge" id="pr-edge">—</span>
+        </div>
+      </div>
+      <div id="plot-portfolio" class="plot"></div>
+      <p class="caption" data-ko="가정: σ 일정, K까지 결정론적 log-경로. 실제 경로는 변동하며, 같은 K에 도달해도 결과가 갈립니다 — 아래 dispersion 패널의 bootstrap 분포 참고. 통화는 표시용 단위이며 수치는 그대로 사용됩니다 (FX 변환 없음).">
+        Assumes constant σ and a deterministic log-linear path to K. Real paths
+        fluctuate — see the dispersion panel below for the bootstrap spread
+        among arrivals. Currency is a display unit; the number is used as-is
+        (no FX conversion).
+      </p>
+    </section>
+
     <section class="figure">
       <h2 data-ko="손익분기 맵: 보유기간 × 목표가">Breakeven map: holding period × target</h2>
       <img src="./assets/breakeven_map.png" alt="Breakeven map (T × K)">
