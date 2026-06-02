@@ -33,8 +33,8 @@
     <div class="hero-context">
       <span class="hc-ticker">IREN</span>
       <span class="hc-divider">/</span>
-      <span class="hc-spot">$58.00</span>
-      <span class="hc-date" data-ko="2026-05-26 기준">as of 2026-05-26</span>
+      <span class="hc-spot">$56.83</span>
+      <span class="hc-date" data-ko="2026-05-22 기준">as of 2026-05-22</span>
     </div>
 
     <h1 data-ko="<em>2x</em>가 <em>1x</em>를 이기는 조건은?">
@@ -50,11 +50,13 @@
     <div class="meta-row">
       <span class="disclaimer-pill" data-ko="개인 분석 · 투자 자문 아님">Personal analysis · not investment advice</span>
       <span class="meta-sub">
-        <span data-ko="데이터 기준일">data as of</span> <time>2026-05-26</time>
+        <span data-ko="데이터 기준일">data as of</span> <time>2026-05-22</time>
         ·
         <span data-ko="빌드">built</span> 2026-05-26T00:00:00Z
         ·
-        σ<sub>low</sub>=0.620 · σ<sub>base</sub>=0.950 · σ<sub>high</sub>=1.380
+        σ<sub>low</sub>=1.027 · σ<sub>base</sub>=1.115 · σ<sub>high</sub>=1.247
+        ·
+        <span style="color: var(--accent-warm); font-size: 10px; letter-spacing: 0.1em;">PREVIEW · SAMPLE DATA</span>
       </span>
     </div>
   </header>
@@ -314,12 +316,15 @@
         });
       });
 
-      const stub = { spot: 58, targets: [150, 450, 700],
-                     regimes: { low: 0.62, base: 0.95, high: 1.38 },
+      // Stub values from data_snapshot/iren_daily.csv (as of 2026-05-22). Built
+      // site uses live yfinance data so these may drift from production. Updating
+      // these only changes preview — production reads inputs.json from the build.
+      const stub = { spot: 56.83, targets: [150, 450, 700],
+                     regimes: { low: 1.027, base: 1.115, high: 1.247 },
                      sigma_now: {
-                       d20:  { sigma: 0.78, pct: 0.41, window: 20 },
-                       d60:  { sigma: 0.91, pct: 0.58, window: 60 },
-                       d120: { sigma: 1.04, pct: 0.71, window: 120 }
+                       d20:  { sigma: 1.164, pct: 0.677, window: 20 },
+                       d60:  { sigma: 1.008, pct: 0.217, window: 60 },
+                       d120: { sigma: 1.068, pct: 0.274, window: 120 }
                      } };
       const origFetch = window.fetch;
       window.fetch = function (input, init) {

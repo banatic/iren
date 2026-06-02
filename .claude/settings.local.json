@@ -6,7 +6,11 @@
       "PowerShell(uv run *)",
       "PowerShell(python -m pytest tests/test_site.py -x --no-header -q 2>&1 | Select-Object -Last 30)",
       "PowerShell(python -c \"import ilb\" 2>&1; python -c \"import sys; print\\(sys.executable\\)\")",
-      "PowerShell(Get-Command *)"
+      "PowerShell(Get-Command *)",
+      "Bash(python3 *)",
+      "PowerShell(Test-Path *)",
+      "PowerShell(\"--- python ---\"; \\(Get-Command python -ErrorAction SilentlyContinue\\).Source; python --version 2>&1; \"--- py launcher ---\"; \\(Get-Command py -ErrorAction SilentlyContinue\\).Source; \"--- pip deps ---\"; python -c \"import scipy, yfinance, numpy, pandas, matplotlib; print\\('have scipy/yf/np/pd/mpl'\\)\" 2>&1; \"--- ruptures ---\"; python -c \"import ruptures; print\\('ruptures', ruptures.__version__\\)\" 2>&1 | Select-Object -First 1; \"--- net ---\"; python -c \"import urllib.request,ssl; print\\(urllib.request.urlopen\\('https://query1.finance.yahoo.com', timeout=8\\).status\\)\" 2>&1 | Select-Object -First 1)",
+      "PowerShell(\"--- pip ---\"; python -m pip --version 2>&1 | Select-Object -First 1; \"--- net yahoo ---\"; try { $r = Invoke-WebRequest -Uri \"https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD?range=5d&interval=1d\" -TimeoutSec 12 -UseBasicParsing; \"yahoo status: $\\($r.StatusCode\\)\" } catch { \"yahoo ERR: $\\($_.Exception.Message\\)\" }; \"--- net pypi ---\"; try { $r2 = Invoke-WebRequest -Uri \"https://pypi.org/simple/ruptures/\" -TimeoutSec 12 -UseBasicParsing; \"pypi status: $\\($r2.StatusCode\\)\" } catch { \"pypi ERR: $\\($_.Exception.Message\\)\" })"
     ]
   }
 }

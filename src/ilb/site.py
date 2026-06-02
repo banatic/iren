@@ -23,6 +23,7 @@ from pathlib import Path
 
 import numpy as np
 
+from ilb import btc_regime
 from ilb.config import Config
 from ilb.data import latest_spot, load_prices
 from ilb.estimate import regime_vols, rolling_sigma
@@ -32,8 +33,10 @@ from ilb.plots import (
     PlotContext,
     plot_breakeven_curve,
     plot_breakeven_map,
+    plot_btc_decoupling,
     plot_conditional_dispersion,
     plot_named_paths,
+    plot_regime_sigma_compare,
     plot_vol_drift_timeseries,
 )
 from ilb.scenarios import build_named_paths
@@ -122,6 +125,14 @@ def _build_plots(cfg: Config, df, spot: float, asof: date, outdir: Path) -> list
         for k in cfg.targets
     ]
     paths.append(plot_conditional_dispersion(ctx, results, PLOTS_DIR))
+
+    # BTC-decoupling regime diagnostic: is the full-history σ contaminated by the
+    # miner→cloud pivot? Fetched via the same load_prices path (live → snapshot).
+    btc = load_prices("BTC-USD")
+    decoup = btc_regime.analyze(df, btc)
+    paths.append(plot_btc_decoupling(ctx, decoup, PLOTS_DIR))
+    verdict_targets = [165.0, *map(float, cfg.targets)]
+    paths.append(plot_regime_sigma_compare(ctx, df, decoup, verdict_targets, PLOTS_DIR))
     return paths
 
 

@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import typer
 
+from ilb import btc_regime
 from ilb import site as site_mod
 from ilb.config import load_config
 from ilb.data import latest_spot, load_prices, write_snapshot
@@ -21,8 +22,10 @@ from ilb.plots import (
     PlotContext,
     plot_breakeven_curve,
     plot_breakeven_map,
+    plot_btc_decoupling,
     plot_conditional_dispersion,
     plot_named_paths,
+    plot_regime_sigma_compare,
     plot_vol_drift_timeseries,
 )
 from ilb.scenarios import build_named_paths
@@ -205,6 +208,12 @@ def run(
         for k in K_list
     ]
     plot_conditional_dispersion(ctx, results, outp)
+
+    typer.echo("[+] BTC decoupling + regime σ compare")
+    btc = load_prices("BTC-USD")
+    decoup = btc_regime.analyze(df, btc)
+    plot_btc_decoupling(ctx, decoup, outp)
+    plot_regime_sigma_compare(ctx, df, decoup, [165.0, *K_list], outp)
 
     typer.echo("\nσ_be (drift-free):")
     typer.echo(f"{'K':>10}  {'σ_be':>10}")

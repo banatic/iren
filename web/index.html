@@ -217,6 +217,36 @@
     </section>
 
     <section class="figure">
+      <h2 data-ko="BTC 커플링과 레짐 전환">BTC coupling &amp; regime break</h2>
+      <img src="./assets/btc_decoupling.png" alt="IREN-BTC rolling beta and correlation with regime break">
+      <p class="caption" data-ko="IREN은 비트코인 채굴기업(Iris Energy)이었다가 AI 클라우드·HPC로 피벗했기에, <em>전체</em> 역사로 추정한 σ는 서로 다른 두 변동성 레짐을 뒤섞습니다. IREN의 BTC 대비 60/120일 rolling OLS β와 피어슨 ρ, 구조변화점(PELT)을 수직선으로 표시하고 채굴기→클라우드 분할 구간을 음영 처리했습니다. β는 깔끔하게 디커플링하기보다 레짐을 오가며 AI-클라우드 피벗 이후에도 BTC·리스크와 계속 커플링됐습니다 — 실질적 변화는 σ <em>레벨</em>이며 다음 그림에서 드러납니다.">
+        IREN was a bitcoin miner (Iris Energy) before pivoting to AI cloud / HPC,
+        so a σ estimated over the <em>full</em> history blends two different
+        volatility regimes. Rolling 60/120-day OLS β and Pearson ρ of IREN against
+        BTC, with structural breaks (PELT) marked and the miner→cloud split shaded.
+        IREN's β is regime-switching rather than a clean decouple — it stayed
+        BTC-/risk-coupled through the pivot. The material change is the σ
+        <em>level</em>, shown next.
+      </p>
+    </section>
+
+    <section class="figure">
+      <h2 data-ko="레짐 σ: 전체 역사 vs 피벗 이후">Regime σ: full history vs post-pivot</h2>
+      <img src="./assets/regime_sigma_compare.png" alt="Full vs post-break sigma bands with breakeven markers">
+      <p class="caption" data-ko="전체-역사 vs break-이후 실현 σ 분포와 low/base/high 밴드, 그리고 K=165 및 150/450/700 타깃의 σ_be 평결선. σ_be 선이 두 σ_base 사이에 놓이면, 오염된 전체-역사 레짐에서 피벗-이후 레짐으로 바꾸는 순간 2x 대 1x 평결이 뒤집힙니다. <em>한계</em>: 피벗-이후 표본이 짧아 밴드의 표준오차가 큽니다. <em>중심</em> σ(기대 drag)는 피벗-이후 레짐을 쓰되, <em>꼬리</em> σ는 고변동 채굴기 역사를 버리지 마세요 — 클라우드 레짐은 아직 스트레스를 겪지 않았습니다. 투자 자문이 아닙니다.">
+        Full-history vs post-break realized-σ distributions with low/base/high
+        bands, and σ_be(K) verdict lines for K=165 and the 150/450/700 targets.
+        Where a σ_be line sits between the two σ_base levels, switching from the
+        contaminated full-history regime to the post-pivot regime flips the
+        2x-vs-1x verdict. <em>Caveats</em>: the post-pivot sample is short, so its
+        bands carry a large standard error; use the post-pivot regime for the
+        <em>central</em> σ (expected drag) but keep the high-vol miner-era history
+        for the <em>tails</em> — the cloud regime has not yet been stress-tested.
+        Not investment advice.
+      </p>
+    </section>
+
+    <section class="figure">
       <h2 data-ko="같은 도착점, 다른 경로">Same destination, different paths</h2>
       <img src="./assets/named_paths.png" alt="Named paths comparison">
       <p class="caption" data-ko="같은 K에 도달하는 세 가지 결정론적 경로. 일간 이산 재조정은 연속시간에서 성립하는 QV-only 동률을 깨뜨립니다.">

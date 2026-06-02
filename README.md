@@ -31,3 +31,29 @@ Breakeven (β=2, c=φ=0): `σ_be(K, T) = √(ln(K/S_0) / T)`.
 Discrete daily rebalancing in `simulate.py` is the ground truth; the
 closed-form is a continuous-time approximation used for the interactive
 breakeven panel and for sanity-checking the simulator.
+
+## Regime diagnostic (BTC decoupling)
+
+IREN was a bitcoin miner (Iris Energy) before pivoting to AI cloud / HPC, so a
+`σ_base` / percentile band estimated over the *full* history blends two different
+volatility regimes and distorts the breakeven verdict near `σ_be(165)`. This is a
+**diagnostic only** — it does not touch the breakeven math.
+
+`btc_regime.py` (pure-compute, no I/O):
+- aligns IREN and BTC daily log-returns on IREN's trading days;
+- rolling 60/120d OLS `β_t = Cov/Var` and Pearson `ρ_t` of IREN on BTC;
+- structural-break detection on `β_60` via `ruptures` PELT (`PELT_PENALTY`,
+  `PELT_MODEL` are documented tunables), with a CUSUM fallback if `ruptures` is
+  unavailable, and a `CATALYST_OVERRIDE` constant to pin the split by hand;
+- re-estimates `σ_low/base/high` on the post-break sample (reusing the existing
+  `regime_vols(rolling_sigma(...))` pipeline) so the numbers compare to the site.
+
+Two figures are added to the build (`btc_decoupling.png`, `regime_sigma_compare.png`)
+and a new section on the page after "Volatility regimes over time". Caveat carried
+in the captions: the post-pivot sample is short (large SE) — use the post-pivot
+regime for the *central* σ but keep the high-vol miner-era history for the *tails*.
+
+BTC bars come from `load_prices("BTC-USD")` (yfinance live → parquet cache →
+committed `data_snapshot/btc-usd_daily.csv` fallback, mirroring IREN). `ruptures`
+is now a runtime dependency; after editing `pyproject.toml` run `uv lock` (or just
+`uv sync`, which re-resolves) to refresh `uv.lock`.
