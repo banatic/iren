@@ -743,6 +743,59 @@ sub, sup {
 
 ::selection { background: var(--accent-soft); color: var(--accent); }
 
+/* Historical σ — numeric tables (distribution stats + month-end readings). */
+.table-wrap {
+  margin: 18px 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-x: auto;
+  background: var(--bg-2);
+}
+.table-wrap.table-scroll { max-height: 340px; overflow-y: auto; }
+.sigma-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.sigma-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  color: var(--muted);
+  font-weight: 500;
+  text-align: right;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-strong);
+  letter-spacing: 0.02em;
+}
+.sigma-table th:first-child, .sigma-table td:first-child { text-align: left; }
+.sigma-table td {
+  text-align: right;
+  padding: 9px 14px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+.sigma-table tbody tr:last-child td { border-bottom: 0; }
+.sigma-table tbody tr:hover td { background: var(--accent-soft); }
+.sigma-table td.sig-win { color: var(--text); font-weight: 500; }
+.sigma-table td.sig-latest { color: var(--accent); font-weight: 600; }
+.sigma-monthly { margin-top: 14px; }
+.sigma-monthly > summary {
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  padding: 6px 0;
+  transition: color 0.2s ease;
+}
+.sigma-monthly > summary::-webkit-details-marker { display: none; }
+.sigma-monthly > summary:hover { color: var(--accent); }
+.sigma-monthly[open] > summary { color: var(--text-dim); }
+
 @media (max-width: 720px) {
   header, main { padding: 0 20px; }
   footer { padding: 24px 20px; }
@@ -754,4 +807,6 @@ sub, sup {
   .verdict-pill { flex-direction: column; align-items: flex-start; gap: 8px; padding: 16px 18px; }
   .verdict-pill .verdict-value { text-align: left; }
   .hc-spot { font-size: 20px; }
+  .sigma-table { font-size: 12px; }
+  .sigma-table thead th, .sigma-table td { padding: 8px 10px; }
 }

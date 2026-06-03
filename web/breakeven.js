@@ -75,6 +75,10 @@
       pf1xName: "1x position",
       pf2xName: "2x position",
       pfStartLine: "start",
+      shTimeAxis: "date",
+      shValueAxis: "annualized σ",
+      shWin: w => `σ·${w}d`,
+      shEwma: "EWMA(0.94)",
     },
     ko: {
       verdict2x: pct => `2x 우세 ${pct}`,
@@ -89,6 +93,10 @@
       pf1xName: "1x 포지션",
       pf2xName: "2x 포지션",
       pfStartLine: "시작",
+      shTimeAxis: "날짜",
+      shValueAxis: "연율 σ",
+      shWin: w => `σ·${w}일`,
+      shEwma: "EWMA(0.94)",
     },
   };
   function t() { return I18N[document.documentElement.lang === "ko" ? "ko" : "en"]; }
@@ -271,6 +279,117 @@
     }, {responsive: true, displayModeBar: false});
   }
 
+  function fmtSig(v) { return (v == null || !Number.isFinite(v)) ? "—" : v.toFixed(3); }
+
+  function paintSigmaHistory(state) {
+    const hist = state.sigma_history;
+    if (!hist) return;
+    const L = t();
+    const windows = hist.windows || [20, 60, 120];
+
+    // --- distribution stats table (one row per window) ---
+    const statsBody = document.getElementById("sigma-stats-body");
+    if (statsBody && hist.stats) {
+      const cols = ["latest", "mean", "min", "p10", "p25", "p50", "p75", "p90", "max"];
+      statsBody.innerHTML = "";
+      windows.forEach(w => {
+        const d = hist.stats["d" + w];
+        if (!d) return;
+        const tr = document.createElement("tr");
+        const cells = [L.shWin(w),
+          ...cols.map(k => fmtSig(d[k])),
+          (d.n != null ? String(d.n) : "—")];
+        cells.forEach((txt, i) => {
+          const td = document.createElement("td");
+          td.textContent = txt;
+          if (i === 0) td.className = "sig-win";
+          if (i === 1) td.className = "sig-latest";   // latest column emphasized
+          tr.appendChild(td);
+        });
+        statsBody.appendChild(tr);
+      });
+    }
+
+    // --- month-end numeric table ---
+    const monBody = document.getElementById("sigma-monthly-body");
+    if (monBody && hist.monthly) {
+      const m = hist.monthly;
+      const s = m.series || {};
+      monBody.innerHTML = "";
+      // newest first so the most recent months are visible without scrolling
+      for (let i = (m.dates || []).length - 1; i >= 0; i--) {
+        const tr = document.createElement("tr");
+        const vals = [m.dates[i],
+          fmtSig((s.d20 || [])[i]), fmtSig((s.d60 || [])[i]),
+          fmtSig((s.d120 || [])[i]), fmtSig((s.ewma || [])[i])];
+        vals.forEach((txt, j) => {
+          const td = document.createElement("td");
+          td.textContent = txt;
+          if (j === 0) td.className = "sig-win";
+          tr.appendChild(td);
+        });
+        monBody.appendChild(tr);
+      }
+    }
+
+    // --- interactive hover-exact daily chart ---
+    const div = document.getElementById("plot-sigma-history");
+    if (div && hist.dates && hist.series) {
+      const x = hist.dates;
+      const colors = {d20: "#7a8696", d60: "#7ce0a4", d120: "#6aa9ff", ewma: "#e0b87c"};
+      const widths = {d20: 1, d60: 2.2, d120: 1.6, ewma: 1.4};
+      const dashes = {ewma: "dot"};
+      const traces = [];
+      windows.forEach(w => {
+        const key = "d" + w;
+        if (!hist.series[key]) return;
+        traces.push({
+          x, y: hist.series[key], mode: "lines", name: L.shWin(w),
+          line: {color: colors[key] || "#7a8696", width: widths[key] || 1.5},
+          connectgaps: false,
+          hovertemplate: `%{x}<br>${L.shWin(w)}=%{y:.3f}<extra></extra>`,
+        });
+      });
+      if (hist.series.ewma) {
+        traces.push({
+          x, y: hist.series.ewma, mode: "lines", name: L.shEwma,
+          line: {color: colors.ewma, width: widths.ewma, dash: dashes.ewma},
+          connectgaps: false,
+          hovertemplate: `%{x}<br>${L.shEwma}=%{y:.3f}<extra></extra>`,
+        });
+      }
+      // regime bands for visual reference (same low/base/high as the curve panel)
+      const reg = state.regimes || {};
+      const shapes = [];
+      if (reg.low && reg.high) {
+        shapes.push({type: "rect", xref: "paper", yref: "y",
+                     x0: 0, x1: 1, y0: reg.low, y1: reg.high,
+                     fillcolor: "rgba(124,224,164,0.06)", line: {width: 0}});
+      }
+      if (reg.base) {
+        shapes.push({type: "line", xref: "paper", yref: "y",
+                     x0: 0, x1: 1, y0: reg.base, y1: reg.base,
+                     line: {color: "#7ce0a4", width: 1, dash: "dash"}});
+      }
+      Plotly.react("plot-sigma-history", traces, {
+        xaxis: {title: L.shTimeAxis, gridcolor: "#1f2731", zerolinecolor: "#2a3441",
+                type: "date"},
+        yaxis: {title: L.shValueAxis, gridcolor: "#1f2731", zerolinecolor: "#2a3441",
+                rangemode: "tozero"},
+        shapes,
+        hovermode: "x unified",
+        template: "plotly_dark",
+        margin: {t: 18, l: 60, r: 20, b: 50},
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: {color: "#c2c9d4", family: "Inter, sans-serif"},
+        legend: {bgcolor: "rgba(0,0,0,0)", bordercolor: "#1f2731", borderwidth: 1,
+                 orientation: "h", x: 0, y: 1.08},
+        showlegend: true,
+      }, {responsive: true, displayModeBar: false});
+    }
+  }
+
   function paintSnapshot(state) {
     // Spot lives in the header (build-time template substitution), not here.
     const sn = state.sigma_now || {};
@@ -300,6 +419,7 @@
       els["out-K"].textContent = els.K.value;
     }
     paintSnapshot(state);
+    paintSigmaHistory(state);
     ids.forEach(id => els[id].addEventListener("input", () => recompute(state)));
 
     // Portfolio panel inputs: amount + currency toggle. Both feed into recompute
@@ -324,6 +444,7 @@
     // all stay current.
     document.addEventListener("langchange", () => {
       paintSnapshot(state);
+      paintSigmaHistory(state);
       recompute(state);
     });
   }

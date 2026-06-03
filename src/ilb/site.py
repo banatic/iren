@@ -22,11 +22,12 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 from ilb import btc_regime
 from ilb.config import Config
 from ilb.data import latest_spot, load_prices
-from ilb.estimate import regime_vols, rolling_sigma
+from ilb.estimate import ewma_sigma, regime_vols, rolling_sigma
 from ilb.generators import bootstrap_paths
 from ilb.leverage import breakeven_sigma
 from ilb.plots import (
@@ -68,6 +69,56 @@ def _sigma_now(returns, windows: list[int]) -> dict:
     return out
 
 
+def _sigma_history(returns, windows: list[int], lam: float) -> dict:
+    """Full *numerical* history of rolling σ (per window) + EWMA, so the page can
+    show past σ values exactly — not just today's snapshot.
+
+    Three views, all derived from the same daily rolling series:
+      - `dates` + `series`: the full daily curve (one shared date axis, one array
+        per window + EWMA, NaN→null) — feeds the hover-exact interactive chart.
+      - `monthly`: month-end readings — a compact scrollable numeric table.
+      - `stats`: the full-history distribution per window (min, deciles/quartiles,
+        median, max, mean, latest) — frames any single reading against its range.
+    """
+    cols = {f"d{w}": rolling_sigma(returns, w) for w in windows}
+    cols["ewma"] = ewma_sigma(returns, lam)
+    frame = pd.DataFrame(cols).dropna(how="all")
+
+    def _arr(s):
+        return [None if pd.isna(v) else round(float(v), 4) for v in s]
+
+    dates = [d.date().isoformat() for d in frame.index]
+    series = {name: _arr(frame[name]) for name in frame.columns}
+
+    monthly = frame.resample("ME").last().dropna(how="all")
+    m_dates = [d.strftime("%Y-%m") for d in monthly.index]
+    m_series = {name: _arr(monthly[name]) for name in monthly.columns}
+
+    qs = [0.0, 0.10, 0.25, 0.50, 0.75, 0.90, 1.0]
+    keys = ["min", "p10", "p25", "p50", "p75", "p90", "max"]
+    stats: dict[str, dict] = {}
+    for w in windows:
+        s = rolling_sigma(returns, w).dropna()
+        if s.empty:
+            continue
+        q = s.quantile(qs)
+        stats[f"d{w}"] = {
+            "window": w,
+            "n": int(s.shape[0]),
+            "latest": round(float(s.iloc[-1]), 4),
+            "mean": round(float(s.mean()), 4),
+            **{k: round(float(q.loc[ql]), 4) for k, ql in zip(keys, qs)},
+        }
+
+    return {
+        "windows": list(windows),
+        "dates": dates,
+        "series": series,
+        "monthly": {"dates": m_dates, "series": m_series},
+        "stats": stats,
+    }
+
+
 def _build_inputs(cfg: Config, df, spot: float, asof: date) -> dict:
     reg = regime_vols(rolling_sigma(df["log_return"], window=max(cfg.windows[0], 60)))
     horizons = list(np.linspace(0.25, 3.0, 28).round(4))
@@ -87,6 +138,7 @@ def _build_inputs(cfg: Config, df, spot: float, asof: date) -> dict:
         "expense_ratio": cfg.expense_ratio,
         "regimes": {"low": reg.low, "base": reg.base, "high": reg.high},
         "sigma_now": _sigma_now(df["log_return"], cfg.windows),
+        "sigma_history": _sigma_history(df["log_return"], cfg.windows, cfg.ewma_lambda),
         "targets": list(map(float, cfg.targets)),
         "horizons": horizons,
         "target_grid": K_grid,

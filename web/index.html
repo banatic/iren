@@ -98,6 +98,65 @@
       </p>
     </section>
 
+    <section class="card" id="sigma-history">
+      <h2 data-ko="과거 σ 상세 (수치)">Historical σ in detail</h2>
+      <p data-ko="오늘의 스냅샷만이 아니라 {{TICKER}}의 <em>모든 과거</em> 실현 σ를 수치로 확인합니다. 분포 통계표는 각 윈도우의 σ가 어느 범위에서 움직였는지, 월말 표는 시점별 정확한 값을, 아래 차트는 마우스를 올리면 해당 날짜의 정확한 σ를 보여줍니다.">
+        Inspect {{TICKER}}'s realized σ across its <em>entire</em> history
+        numerically — not just today's snapshot. The distribution table shows the
+        range each window's σ has traveled; the month-end table gives exact values
+        per point in time; the chart below reports the precise σ on hover.
+      </p>
+
+      <div class="table-wrap">
+        <table class="sigma-table" id="sigma-stats-table">
+          <thead>
+            <tr>
+              <th data-ko="윈도우">window</th>
+              <th data-ko="최신">latest</th>
+              <th data-ko="평균">mean</th>
+              <th>min</th>
+              <th>p10</th>
+              <th>p25</th>
+              <th data-ko="중앙값">p50</th>
+              <th>p75</th>
+              <th>p90</th>
+              <th>max</th>
+              <th>n</th>
+            </tr>
+          </thead>
+          <tbody id="sigma-stats-body"></tbody>
+        </table>
+      </div>
+      <p class="caption" data-ko="전체 역사에 걸친 rolling σ 분포. 백분위는 해당 윈도우의 모든 일별 관측치 기준. 연율화(√252) 수치입니다.">
+        Full-history rolling-σ distribution. Percentiles are over every daily
+        observation for that window. Annualized (√252).
+      </p>
+
+      <div id="plot-sigma-history" class="plot"></div>
+      <p class="caption" data-ko="20/60/120일 rolling σ와 EWMA(λ=0.94)의 일별 곡선. 차트 위에 마우스를 올리면 날짜별 정확한 σ를 읽을 수 있고, 범례 항목을 클릭해 계열을 켜고 끌 수 있습니다.">
+        Daily rolling 20/60/120-day σ and EWMA(λ=0.94). Hover for the exact σ on
+        any date; click legend entries to toggle series.
+      </p>
+
+      <details class="sigma-monthly">
+        <summary data-ko="월말 σ 표 펼치기 (수치)">Show month-end σ table (numeric)</summary>
+        <div class="table-wrap table-scroll">
+          <table class="sigma-table" id="sigma-monthly-table">
+            <thead>
+              <tr>
+                <th data-ko="월">month</th>
+                <th>σ·20d</th>
+                <th>σ·60d</th>
+                <th>σ·120d</th>
+                <th>EWMA</th>
+              </tr>
+            </thead>
+            <tbody id="sigma-monthly-body"></tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
     <section class="card" id="interactive">
       <h2 data-ko="손익분기 변동성">Breakeven volatility</h2>
       <p class="caveat">
