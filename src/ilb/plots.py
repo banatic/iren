@@ -15,7 +15,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from ilb.estimate import RegimeVols, ewma_sigma, rolling_drift, vol_table
+from ilb.btc_regime import DecouplingResult
+from ilb.estimate import RegimeVols, ewma_sigma, rolling_drift, rolling_sigma, vol_table
 from ilb.leverage import breakeven_map, breakeven_sigma
 from ilb.scenarios import NamedPath
 from ilb.simulate import ConditionalResult, simulate_leveraged_nav
@@ -269,3 +270,145 @@ def plot_conditional_dispersion(
         "Box = (p01, p05, median, mean) of 2x terminal multiple among in-band paths."
     ), fontsize=7.5, alpha=0.7)
     return _save(fig, outdir, "conditional_dispersion.png")
+
+
+def _shade_regimes(ax, split, x0, x1) -> None:
+    """Shade miner-era (≤ split) red and cloud-era (> split) green on a time axis."""
+    if split is None:
+        return
+    ax.axvspan(x0, split, color="#e07060", alpha=0.07, zorder=0)
+    ax.axvspan(split, x1, color="#5fb56f", alpha=0.07, zorder=0)
+
+
+def plot_btc_decoupling(
+    ctx: PlotContext,
+    result: DecouplingResult,
+    outdir: Path,
+) -> Path:
+    """6: IREN↔BTC rolling β (top) and ρ (bottom) with detected breaks + regime shading.
+
+    Diagnostic for the regime-contamination story: IREN's BTC β/ρ are regime-
+    switching (not a clean monotone decouple), so a full-history σ blends eras.
+    """
+    _apply_theme(ctx.theme)
+    bc = result.beta_corr
+    x0, x1 = bc.index.min(), bc.index.max()
+    fig, (axb, axr) = plt.subplots(2, 1, figsize=(11, 7), sharex=True,
+                                   gridspec_kw={"height_ratios": [3, 2]})
+
+    beta_colors = {60: "#7aa6ff", 120: "#cccc55"}
+    rho_colors = {60: "#5fb56f", 120: "#e07060"}
+    for w in result.windows:
+        if f"beta_{w}" in bc:
+            axb.plot(bc.index, bc[f"beta_{w}"], lw=1.1, color=beta_colors.get(w),
+                     label=f"β {w}d")
+        if f"rho_{w}" in bc:
+            axr.plot(bc.index, bc[f"rho_{w}"], lw=1.1, color=rho_colors.get(w),
+                     label=f"ρ {w}d")
+
+    axb.axhline(1.0, color="grey", lw=0.6, ls="-", alpha=0.5)
+    axb.axhline(0.0, color="grey", lw=0.5, ls=":", alpha=0.4)
+    axr.axhline(0.0, color="grey", lw=0.5, ls=":", alpha=0.4)
+
+    # all detected breaks as faint vlines; the chosen split prominent + shading
+    for d in result.break_dates:
+        for ax in (axb, axr):
+            ax.axvline(d, color="white", lw=0.5, ls=":", alpha=0.35, zorder=1)
+    _shade_regimes(axb, result.split_date, x0, x1)
+    _shade_regimes(axr, result.split_date, x0, x1)
+    if result.split_date is not None:
+        for ax in (axb, axr):
+            ax.axvline(result.split_date, color="orange", lw=1.3, ls="--", alpha=0.9, zorder=2)
+        axb.text(result.split_date, axb.get_ylim()[1], "  miner ↔ cloud split",
+                 va="top", ha="left", fontsize=8, color="orange", alpha=0.9)
+    for d in result.catalysts:
+        for ax in (axb, axr):
+            ax.axvline(d, color="#36d6e7", lw=1.2, ls="-.", alpha=0.85, zorder=2)
+
+    axb.set_ylabel("β  (IREN on BTC)")
+    axb.set_title("IREN ↔ BTC decoupling: rolling OLS β and correlation ρ")
+    axb.legend(fontsize=8, loc="upper left", ncol=len(result.windows))
+    axr.set_ylabel("ρ  (Pearson)")
+    axr.set_xlabel("date")
+    axr.legend(fontsize=8, loc="upper left", ncol=len(result.windows))
+    axr.set_ylim(-0.2, 1.0)
+
+    split_str = result.split_date.date().isoformat() if result.split_date is not None else "none"
+    fig.suptitle("BTC coupling over time (miner → AI-cloud regime)", fontsize=12)
+    fig.text(0.01, -0.02, ctx.caption(
+        f"Breaks via {result.method.upper()} (pen={result.penalty:g}) on β_60. "
+        f"Regime split {split_str}. β is regime-switching, not a clean decouple — the "
+        f"material change is the σ level (see next figure)."
+    ), fontsize=7.5, alpha=0.7)
+    return _save(fig, outdir, "btc_decoupling.png")
+
+
+def plot_regime_sigma_compare(
+    ctx: PlotContext,
+    df: pd.DataFrame,
+    result: DecouplingResult,
+    verdict_targets: list[float],
+    outdir: Path,
+    window: int = 60,
+) -> Path:
+    """7: full-history vs post-break σ distributions/bands + σ_be(K) verdict markers.
+
+    Shows which regime a target's breakeven σ lands in — i.e. whether using the
+    post-pivot (lower-σ) regime instead of the contaminated full-history regime
+    flips the 2x-vs-1x verdict.
+    """
+    _apply_theme(ctx.theme)
+    r = df["log_return"]
+    full_roll = rolling_sigma(r, window).dropna()
+    if result.split_date is not None:
+        post_roll = rolling_sigma(r[r.index > result.split_date], window).dropna()
+    else:
+        post_roll = full_roll
+    samples = [full_roll.to_numpy(), post_roll.to_numpy()]
+    regimes = [result.full_regime, result.post_regime]
+    pos = [1, 2]
+    fill = ["#e07060", "#5fb56f"]  # miner-era / cloud-era
+    split_str = result.split_date.date().isoformat() if result.split_date is not None else "none"
+    labels = [f"Full history\n(miner+cloud, n={result.n_obs_full})",
+              f"Post-break\n(>{split_str}, n={result.n_obs_post})"]
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    vp = ax.violinplot(samples, positions=pos, widths=0.7, showextrema=False)
+    for body, c in zip(vp["bodies"], fill, strict=True):
+        body.set_facecolor(c)
+        body.set_alpha(0.30)
+        body.set_edgecolor(c)
+
+    # low / base / high markers per regime
+    for p, reg in zip(pos, regimes, strict=True):
+        for val, col, lw in [(reg.low, "#5fb56f", 1.0), (reg.base, "#cccc55", 2.0),
+                             (reg.high, "#e07060", 1.0)]:
+            ax.hlines(val, p - 0.34, p + 0.34, color=col, lw=lw, alpha=0.9)
+        ax.text(p, reg.base, f" σ_base={reg.base:.3f}", va="center", ha="left",
+                fontsize=8, color="#cccc55")
+
+    # σ_be(K) horizontal verdict markers; emphasize the flipper(s)
+    flips = []
+    for K in verdict_targets:
+        be = float(breakeven_sigma(K, ctx.spot, ctx.horizon_years))
+        flipped = (be > result.post_regime.base) != (be > result.full_regime.base)
+        if flipped:
+            flips.append(int(K))
+        ax.axhline(be, color=("#36d6e7" if flipped else "grey"),
+                   lw=(1.8 if flipped else 1.0),
+                   ls=("-" if flipped else "--"), alpha=(0.95 if flipped else 0.55))
+        ax.text(2.55, be, f"σ_be({int(K)})={be:.3f}" + ("  ⟵ flips" if flipped else ""),
+                va="center", ha="left", fontsize=8,
+                color=("#36d6e7" if flipped else "grey"))
+
+    ax.set_xticks(pos)
+    ax.set_xticklabels(labels, fontsize=9)
+    ax.set_xlim(0.4, 3.4)
+    ax.set_ylabel("annualized realized σ")
+    ax.set_title("Regime σ: full history vs post-break — does the verdict flip?")
+    flip_note = (f"K={', '.join(map(str, flips))} flips verdict between regimes. "
+                 if flips else "No marked K flips between these regimes. ")
+    fig.text(0.01, -0.02, ctx.caption(
+        flip_note + "A σ_be line above a regime's σ_base ⇒ 2x wins in that regime."
+    ), fontsize=7.5, alpha=0.7)
+    return _save(fig, outdir, "regime_sigma_compare.png")

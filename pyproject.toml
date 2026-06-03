@@ -14,6 +14,7 @@ dependencies = [
     "pyyaml>=6.0",
     "typer>=0.12",
     "scipy>=1.13",
+    "ruptures>=1.1.9",        # PELT structural-break detection (CUSUM fallback if absent)
 ]
 
 [project.optional-dependencies]
@@ -41,6 +42,7 @@ ignore = ["PLR0913", "PLR2004"]
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = ["SIM300"]                # `actual == pytest.approx(expected)` is canonical
 "src/ilb/data.py" = ["PLC0415"]          # local yfinance import is intentional
+"src/ilb/btc_regime.py" = ["PLC0415"]    # local ruptures import enables CUSUM fallback
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

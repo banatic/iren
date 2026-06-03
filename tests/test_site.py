@@ -79,6 +79,8 @@ def test_inputs_json_shape(tmp_path: Path, monkeypatch):
     assert (out / ".nojekyll").exists()
     assert (out / "assets" / "breakeven.js").exists()
     assert (out / "assets" / "styles.css").exists()
-    # At least the 5 PNGs landed in assets
+    # The 7 PNGs landed in assets (5 core + btc_decoupling + regime_sigma_compare)
     pngs = list((out / "assets").glob("*.png"))
-    assert len(pngs) == 5
+    assert len(pngs) == 7
+    names = {p.name for p in pngs}
+    assert {"btc_decoupling.png", "regime_sigma_compare.png"} <= names

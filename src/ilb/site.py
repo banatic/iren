@@ -23,6 +23,7 @@ from pathlib import Path
 
 import numpy as np
 
+from ilb import btc_regime
 from ilb.config import Config
 from ilb.data import latest_spot, load_prices
 from ilb.estimate import regime_vols, rolling_sigma
@@ -32,8 +33,10 @@ from ilb.plots import (
     PlotContext,
     plot_breakeven_curve,
     plot_breakeven_map,
+    plot_btc_decoupling,
     plot_conditional_dispersion,
     plot_named_paths,
+    plot_regime_sigma_compare,
     plot_vol_drift_timeseries,
 )
 from ilb.scenarios import build_named_paths
@@ -48,6 +51,20 @@ def _render(template: str, ctx: dict) -> str:
     out = template
     for k, v in ctx.items():
         out = out.replace("{{" + k + "}}", str(v))
+    return out
+
+
+def _sigma_now(returns, windows: list[int]) -> dict:
+    """Latest rolling σ per window + its percentile in the full historical distribution.
+    Frames the snapshot honestly: "today's vol vs everything we've seen", not a forecast."""
+    out: dict[str, dict] = {}
+    for w in windows:
+        s = rolling_sigma(returns, w).dropna()
+        if s.empty:
+            continue
+        latest = float(s.iloc[-1])
+        pct = float((s <= latest).mean())
+        out[f"d{w}"] = {"sigma": round(latest, 4), "pct": round(pct, 3), "window": w}
     return out
 
 
@@ -69,6 +86,7 @@ def _build_inputs(cfg: Config, df, spot: float, asof: date) -> dict:
         "financing_rate": cfg.financing_rate,
         "expense_ratio": cfg.expense_ratio,
         "regimes": {"low": reg.low, "base": reg.base, "high": reg.high},
+        "sigma_now": _sigma_now(df["log_return"], cfg.windows),
         "targets": list(map(float, cfg.targets)),
         "horizons": horizons,
         "target_grid": K_grid,
@@ -107,6 +125,14 @@ def _build_plots(cfg: Config, df, spot: float, asof: date, outdir: Path) -> list
         for k in cfg.targets
     ]
     paths.append(plot_conditional_dispersion(ctx, results, PLOTS_DIR))
+
+    # BTC-decoupling regime diagnostic: is the full-history σ contaminated by the
+    # miner→cloud pivot? Fetched via the same load_prices path (live → snapshot).
+    btc = load_prices("BTC-USD")
+    decoup = btc_regime.analyze(df, btc)
+    paths.append(plot_btc_decoupling(ctx, decoup, PLOTS_DIR))
+    verdict_targets = [165.0, *map(float, cfg.targets)]
+    paths.append(plot_regime_sigma_compare(ctx, df, decoup, verdict_targets, PLOTS_DIR))
     return paths
 
 

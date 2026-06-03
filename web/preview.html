@@ -1,16 +1,19 @@
 <!doctype html>
+<!--
+  Local preview only — opens directly from disk with sibling-relative paths
+  and dummy values. The real template is index.html; the build (`python -m
+  ilb.cli build-site`) copies styles.css/breakeven.js into site/assets/ and
+  substitutes the {{...}} placeholders. Plot PNGs only exist after build.
+-->
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{TITLE}}</title>
-  <meta property="og:title" content="{{TITLE}}">
-  <meta property="og:description" content="Drift-free breakeven volatility analysis for 2x daily-rebalanced {{TICKER}}.">
-  <meta property="og:image" content="./assets/breakeven_map.png">
+  <title>IREN 2x — breakeven volatility (preview)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,wght@1,400&display=swap">
-  <link rel="stylesheet" href="./assets/styles.css">
+  <link rel="stylesheet" href="./styles.css">
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
 </head>
 <body>
@@ -28,10 +31,10 @@
     </div>
 
     <div class="hero-context">
-      <span class="hc-ticker">{{TICKER}}</span>
+      <span class="hc-ticker">IREN</span>
       <span class="hc-divider">/</span>
-      <span class="hc-spot">${{SPOT}}</span>
-      <span class="hc-date" data-ko="{{ASOF}} 기준">as of {{ASOF}}</span>
+      <span class="hc-spot">$56.83</span>
+      <span class="hc-date" data-ko="2026-05-22 기준">as of 2026-05-22</span>
     </div>
 
     <h1 data-ko="<em>2x</em>가 <em>1x</em>를 이기는 조건은?">
@@ -47,20 +50,22 @@
     <div class="meta-row">
       <span class="disclaimer-pill" data-ko="개인 분석 · 투자 자문 아님">Personal analysis · not investment advice</span>
       <span class="meta-sub">
-        <span data-ko="데이터 기준일">data as of</span> <time>{{ASOF}}</time>
+        <span data-ko="데이터 기준일">data as of</span> <time>2026-05-22</time>
         ·
-        <span data-ko="빌드">built</span> {{BUILT_AT}}
+        <span data-ko="빌드">built</span> 2026-05-26T00:00:00Z
         ·
-        σ<sub>low</sub>={{REGIME_LOW}} · σ<sub>base</sub>={{REGIME_BASE}} · σ<sub>high</sub>={{REGIME_HIGH}}
+        σ<sub>low</sub>=1.027 · σ<sub>base</sub>=1.115 · σ<sub>high</sub>=1.247
+        ·
+        <span style="color: var(--accent-warm); font-size: 10px; letter-spacing: 0.1em;">PREVIEW · SAMPLE DATA</span>
       </span>
     </div>
   </header>
 
   <main>
     <section class="card" id="snapshot">
-      <h2 data-ko="{{TICKER}}의 현재 위치">Where {{TICKER}} sits today</h2>
-      <p data-ko="세 가지 윈도우의 최근 실현 σ와 각 σ가 {{TICKER}} 역사 분포에서 어디에 있는지를 보여줍니다. <em>만약</em> 향후 T년이 최근과 비슷하다면, 아래 곡선의 마커가 2x가 손익분기 평결에 비해 어디에 떨어지는지를 표시합니다.">
-        Recent realized σ at three windows, plus where each sits in {{TICKER}}'s
+      <h2 data-ko="IREN의 현재 위치">Where IREN sits today</h2>
+      <p data-ko="세 가지 윈도우의 최근 실현 σ와 각 σ가 IREN 역사 분포에서 어디에 있는지를 보여줍니다. <em>만약</em> 향후 T년이 최근과 비슷하다면, 아래 곡선의 마커가 2x가 손익분기 평결에 비해 어디에 떨어지는지를 표시합니다.">
+        Recent realized σ at three windows, plus where each sits in IREN's
         own historical distribution. <em>If</em> the next T years look like the
         recent past, the marker on the curve below shows where 2x lands relative
         to the breakeven verdict.
@@ -91,10 +96,10 @@
           <div class="snap-bar"><div class="snap-bar-fill" id="snap-bar120"></div></div>
         </div>
       </div>
-      <p class="caption" data-ko="백분위는 역사적 rolling-σ 관측치 중 오늘 수치 이하의 비율. 60일 윈도우가 패널 아래 곡선의 마커를 결정합니다. 예측이 아니라 스냅샷이며 — {{TICKER}}의 변동성은 비정상(non-stationary)입니다.">
+      <p class="caption" data-ko="백분위는 역사적 rolling-σ 관측치 중 오늘 수치 이하의 비율. 60일 윈도우가 패널 아래 곡선의 마커를 결정합니다. 예측이 아니라 스냅샷이며 — IREN의 변동성은 비정상(non-stationary)입니다.">
         Percentile is the share of historical rolling-σ observations at or below
         today's reading. The 60d window anchors the marker on the curve below.
-        This is a snapshot, not a forecast — vol is non-stationary on {{TICKER}}.
+        This is a snapshot, not a forecast — vol is non-stationary on IREN.
       </p>
     </section>
 
@@ -154,15 +159,16 @@
 
       <div id="plot-curve" class="plot"></div>
       <p class="caption">
-        <span data-ko="백엔드 회귀 검증: 기본 보유기간에서 σ_be = ">Backend regression check: σ_be at the default horizon = </span><code>{{BE_SAMPLE_JSON}}</code><span data-ko=". 클라이언트 JS는 Python 레퍼런스와 ±1e-6까지 일치해야 합니다.">.
-        Client-side JS must agree with the Python reference to ±1e-6.</span>
+        <span data-ko="백엔드 회귀 검증 (샘플).">Backend regression check (sample).</span>
+        <span data-ko="클라이언트 JS는 Python 레퍼런스와 ±1e-6까지 일치해야 합니다.">Client-side JS must agree with the
+        Python reference to ±1e-6.</span>
       </p>
     </section>
 
     <section class="card" id="portfolio">
       <h2 data-ko="내 포지션의 경로">Your portfolio path</h2>
-      <p data-ko="현재 {{TICKER}} 포지션의 평가액을 입력하면, 패널 위의 K · T · σ 슬라이더 설정에서 시간에 따라 1x와 2x가 어떻게 갈리는지를 보여줍니다. 주가가 σ 변동성을 유지한 채 목표가 K로 향하는 결정론적 log-경로를 따른다고 가정합니다.">
-        Enter your current {{TICKER}} position value. Given the K · T · σ sliders
+      <p data-ko="현재 IREN 포지션의 평가액을 입력하면, 패널 위의 K · T · σ 슬라이더 설정에서 시간에 따라 1x와 2x가 어떻게 갈리는지를 보여줍니다. 주가가 σ 변동성을 유지한 채 목표가 K로 향하는 결정론적 log-경로를 따른다고 가정합니다.">
+        Enter your current IREN position value. Given the K · T · σ sliders
         above, the plot projects 1x vs 2x portfolio value over time, assuming
         the stock follows a deterministic log-path to target K at the chosen σ.
       </p>
@@ -206,49 +212,19 @@
 
     <section class="figure">
       <h2 data-ko="손익분기 맵: 보유기간 × 목표가">Breakeven map: holding period × target</h2>
-      <img src="./assets/breakeven_map.png" alt="Breakeven map (T × K)">
+      <div class="plot-placeholder">breakeven_map.png — generated by build</div>
       <p class="caption" data-ko="σ_base 기준으로 색칠. 흰색 등고선 = 동률. 목표가보다 보유기간이 결정적인 경우가 많음.">Coloured at σ_base. White contour = tie. Horizon often dominates target.</p>
     </section>
 
     <section class="figure">
       <h2 data-ko="시간에 따른 변동성 레짐">Volatility regimes over time</h2>
-      <img src="./assets/vol_drift_timeseries.png" alt="Rolling volatility timeseries">
+      <div class="plot-placeholder">vol_drift_timeseries.png — generated by build</div>
       <p class="caption" data-ko="20/60/120일 rolling 연율 σ + EWMA, 레짐 분위 밴드 포함.">Rolling 20/60/120-day annualized σ + EWMA, with regime quantile bands.</p>
     </section>
 
     <section class="figure">
-      <h2 data-ko="BTC 커플링과 레짐 전환">BTC coupling &amp; regime break</h2>
-      <img src="./assets/btc_decoupling.png" alt="IREN-BTC rolling beta and correlation with regime break">
-      <p class="caption" data-ko="IREN은 비트코인 채굴기업(Iris Energy)이었다가 AI 클라우드·HPC로 피벗했기에, <em>전체</em> 역사로 추정한 σ는 서로 다른 두 변동성 레짐을 뒤섞습니다. IREN의 BTC 대비 60/120일 rolling OLS β와 피어슨 ρ, 구조변화점(PELT)을 수직선으로 표시하고 채굴기→클라우드 분할 구간을 음영 처리했습니다. β는 깔끔하게 디커플링하기보다 레짐을 오가며 AI-클라우드 피벗 이후에도 BTC·리스크와 계속 커플링됐습니다 — 실질적 변화는 σ <em>레벨</em>이며 다음 그림에서 드러납니다.">
-        IREN was a bitcoin miner (Iris Energy) before pivoting to AI cloud / HPC,
-        so a σ estimated over the <em>full</em> history blends two different
-        volatility regimes. Rolling 60/120-day OLS β and Pearson ρ of IREN against
-        BTC, with structural breaks (PELT) marked and the miner→cloud split shaded.
-        IREN's β is regime-switching rather than a clean decouple — it stayed
-        BTC-/risk-coupled through the pivot. The material change is the σ
-        <em>level</em>, shown next.
-      </p>
-    </section>
-
-    <section class="figure">
-      <h2 data-ko="레짐 σ: 전체 역사 vs 피벗 이후">Regime σ: full history vs post-pivot</h2>
-      <img src="./assets/regime_sigma_compare.png" alt="Full vs post-break sigma bands with breakeven markers">
-      <p class="caption" data-ko="전체-역사 vs break-이후 실현 σ 분포와 low/base/high 밴드, 그리고 K=165 및 150/450/700 타깃의 σ_be 평결선. σ_be 선이 두 σ_base 사이에 놓이면, 오염된 전체-역사 레짐에서 피벗-이후 레짐으로 바꾸는 순간 2x 대 1x 평결이 뒤집힙니다. <em>한계</em>: 피벗-이후 표본이 짧아 밴드의 표준오차가 큽니다. <em>중심</em> σ(기대 drag)는 피벗-이후 레짐을 쓰되, <em>꼬리</em> σ는 고변동 채굴기 역사를 버리지 마세요 — 클라우드 레짐은 아직 스트레스를 겪지 않았습니다. 투자 자문이 아닙니다.">
-        Full-history vs post-break realized-σ distributions with low/base/high
-        bands, and σ_be(K) verdict lines for K=165 and the 150/450/700 targets.
-        Where a σ_be line sits between the two σ_base levels, switching from the
-        contaminated full-history regime to the post-pivot regime flips the
-        2x-vs-1x verdict. <em>Caveats</em>: the post-pivot sample is short, so its
-        bands carry a large standard error; use the post-pivot regime for the
-        <em>central</em> σ (expected drag) but keep the high-vol miner-era history
-        for the <em>tails</em> — the cloud regime has not yet been stress-tested.
-        Not investment advice.
-      </p>
-    </section>
-
-    <section class="figure">
       <h2 data-ko="같은 도착점, 다른 경로">Same destination, different paths</h2>
-      <img src="./assets/named_paths.png" alt="Named paths comparison">
+      <div class="plot-placeholder">named_paths.png — generated by build</div>
       <p class="caption" data-ko="같은 K에 도달하는 세 가지 결정론적 경로. 일간 이산 재조정은 연속시간에서 성립하는 QV-only 동률을 깨뜨립니다.">
         Three deterministic paths landing at the same K. Discrete daily
         rebalancing breaks the QV-only tie that holds in continuous time.
@@ -257,12 +233,12 @@
 
     <section class="figure">
       <h2 data-ko="도달 조건부 분산 + 손상">Terminal-conditioned dispersion + impairment</h2>
-      <img src="./assets/conditional_dispersion.png" alt="Conditional dispersion">
-      <p class="caption" data-ko="Bootstrap MC, 각 K 밴드 도달 조건. {{TICKER}}에서 drift는 식별 불가능하므로 무조건적 도달 확률은 보고하지 않고, 도달한 경로 사이의 2x vs 1x 분산과 경로상 NAV 손상이 발생한 비율만 보여줍니다.">
+      <div class="plot-placeholder">conditional_dispersion.png — generated by build</div>
+      <p class="caption" data-ko="Bootstrap MC, 각 K 밴드 도달 조건. IREN에서 drift는 식별 불가능하므로 무조건적 도달 확률은 보고하지 않고, 도달한 경로 사이의 2x vs 1x 분산과 경로상 NAV 손상이 발생한 비율만 보여줍니다.">
         Bootstrap MC, conditioned on reaching each K band. Drift is
-        non-identifiable on {{TICKER}}, so unconditional reach probabilities are
-        not reported — only the among-arrivals 2x vs 1x dispersion and the share
-        of paths that suffered NAV impairment along the way.
+        non-identifiable on IREN, so unconditional reach probabilities are
+        not reported — only the among-arrivals 2x vs 1x dispersion and the
+        share of paths that suffered NAV impairment along the way.
       </p>
     </section>
 
@@ -275,9 +251,9 @@
         <li data-ko="손익분기 (β=2, 수수료 0): σ<sub>be</sub>(K, T) = √(ln(K/S₀) / T).">Breakeven (β=2, no fees): σ<sub>be</sub>(K, T) = √(ln(K/S₀) / T).</li>
         <li data-ko="ground truth는 일간 이산 재조정 시뮬레이터입니다 — 닫힌형 식은 인터랙티브 패널과 연속극한 sanity check 용도로만 사용합니다.">Ground truth is the discrete daily rebalance simulator — closed-form
             is used for the interactive panel and as a continuous-limit sanity check.</li>
-        <li data-ko="Drift μ는 추정하지 않습니다 ({{TICKER}}의 짧은 역사에서 표준오차가 점추정치를 압도). 모든 MC 통계는 K 도달 조건부입니다.">Drift μ is not estimated (its standard error swamps the point estimate
-            on {{TICKER}}'s short history). All MC statistics are conditioned on K-arrival.</li>
-        <li data-ko="Block bootstrap이 {{TICKER}}의 fat tail과 변동성 클러스터링을 보존합니다. rolling-σ 분위수로부터 low/base/high 레짐도 함께 제시합니다.">Block bootstrap preserves {{TICKER}}'s fat tails and vol clustering; we
+        <li data-ko="Drift μ는 추정하지 않습니다 (IREN의 짧은 역사에서 표준오차가 점추정치를 압도). 모든 MC 통계는 K 도달 조건부입니다.">Drift μ is not estimated (its standard error swamps the point estimate
+            on IREN's short history). All MC statistics are conditioned on K-arrival.</li>
+        <li data-ko="Block bootstrap이 IREN의 fat tail과 변동성 클러스터링을 보존합니다. rolling-σ 분위수로부터 low/base/high 레짐도 함께 제시합니다.">Block bootstrap preserves IREN's fat tails and vol clustering; we
             also show low/base/high regimes from the rolling-σ quantiles.</li>
       </ul>
     </details>
@@ -293,15 +269,30 @@
     </p>
   </footer>
 
+  <style>
+    .plot-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 220px;
+      margin-top: 12px;
+      border: 1px dashed var(--border-strong);
+      border-radius: 10px;
+      background:
+        repeating-linear-gradient(45deg, transparent 0 12px, rgba(124,224,164,0.03) 12px 13px),
+        var(--bg-2);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.06em;
+    }
+  </style>
+
   <script>
-    // i18n: swap innerHTML between original (EN, saved on first load) and data-ko.
-    // Skips reassignment when current innerHTML already matches the target — this
-    // both preserves children that weren't supposed to change and avoids any
-    // flash of replaced content.
+    // i18n + fetch stub for offline preview.
     (function () {
       const ORIG = new WeakMap();
       function $$() { return document.querySelectorAll('[data-ko]'); }
-
       function setLang(lang) {
         if (lang !== 'en' && lang !== 'ko') lang = 'en';
         $$().forEach(el => {
@@ -316,8 +307,6 @@
         try { localStorage.setItem('iren.lang', lang); } catch (_) {}
         document.dispatchEvent(new CustomEvent('langchange', { detail: { lang } }));
       }
-      window.__irenSetLang = setLang;
-
       document.addEventListener('DOMContentLoaded', () => {
         let saved = 'en';
         try { saved = localStorage.getItem('iren.lang') || 'en'; } catch (_) {}
@@ -326,8 +315,27 @@
           b.addEventListener('click', () => setLang(b.dataset.lang));
         });
       });
+
+      // Stub values from data_snapshot/iren_daily.csv (as of 2026-05-22). Built
+      // site uses live yfinance data so these may drift from production. Updating
+      // these only changes preview — production reads inputs.json from the build.
+      const stub = { spot: 56.83, targets: [150, 450, 700],
+                     regimes: { low: 1.027, base: 1.115, high: 1.247 },
+                     sigma_now: {
+                       d20:  { sigma: 1.164, pct: 0.677, window: 20 },
+                       d60:  { sigma: 1.008, pct: 0.217, window: 60 },
+                       d120: { sigma: 1.068, pct: 0.274, window: 120 }
+                     } };
+      const origFetch = window.fetch;
+      window.fetch = function (input, init) {
+        if (typeof input === "string" && input.endsWith("inputs.json")) {
+          return Promise.resolve(new Response(JSON.stringify(stub),
+            { status: 200, headers: { "Content-Type": "application/json" } }));
+        }
+        return origFetch ? origFetch(input, init) : Promise.reject("no fetch");
+      };
     })();
   </script>
-  <script src="./assets/breakeven.js"></script>
+  <script src="./breakeven.js"></script>
 </body>
 </html>

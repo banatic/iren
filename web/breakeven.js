@@ -23,10 +23,13 @@
 
   const ids = ["K", "T", "sigma", "c", "phi", "beta"];
   const els = {};
-  ids.forEach(id => {
-    els[id] = document.getElementById("ctl-" + id);
-    els["out-" + id] = document.getElementById("out-" + id);
-  });
+
+  function resolveEls() {
+    ids.forEach(id => {
+      els[id] = document.getElementById("ctl-" + id);
+      els["out-" + id] = document.getElementById("out-" + id);
+    });
+  }
 
   async function loadInputs() {
     try {
@@ -37,6 +40,58 @@
   }
 
   function fmtPct(x) { return (100 * x).toFixed(2) + "%"; }
+
+  // Portfolio panel — currency state and formatters.
+  // Currency is a display unit; numbers are used as-is (no FX conversion).
+  let currency = "USD";
+  function parseAmount(s) {
+    if (s == null) return 0;
+    const cleaned = String(s).replace(/[^0-9.]/g, "");
+    const n = parseFloat(cleaned);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  }
+  function fmtCurrency(v) {
+    if (!Number.isFinite(v)) return "—";
+    if (currency === "KRW") return "₩" + Math.round(v).toLocaleString("ko-KR");
+    return "$" + v.toLocaleString("en-US", {maximumFractionDigits: 0});
+  }
+  function fmtCurrencySigned(v) {
+    if (!Number.isFinite(v)) return "—";
+    const sign = v >= 0 ? "+" : "−";
+    return sign + fmtCurrency(Math.abs(v));
+  }
+
+  const I18N = {
+    en: {
+      verdict2x: pct => `2x wins by ${pct}`,
+      verdict1x: pct => `1x wins by ${pct}`,
+      tie: "tie",
+      xAxis: "realized annualized σ",
+      yAxis: "L_T/L_0  ÷  S_T/S_0",
+      todayMarker: (w, sig, K) => `today σ_${w}d=${sig.toFixed(2)} · K=$${K}`,
+      tieTrace: "tie",
+      pfTimeAxis: "holding period t (years)",
+      pfValueAxis: "portfolio value",
+      pf1xName: "1x position",
+      pf2xName: "2x position",
+      pfStartLine: "start",
+    },
+    ko: {
+      verdict2x: pct => `2x 우세 ${pct}`,
+      verdict1x: pct => `1x 우세 ${pct}`,
+      tie: "동률",
+      xAxis: "실현 연율 σ",
+      yAxis: "L_T/L_0  ÷  S_T/S_0",
+      todayMarker: (w, sig, K) => `오늘 σ_${w}일=${sig.toFixed(2)} · K=$${K}`,
+      tieTrace: "동률",
+      pfTimeAxis: "보유기간 t (년)",
+      pfValueAxis: "포트폴리오 평가액",
+      pf1xName: "1x 포지션",
+      pf2xName: "2x 포지션",
+      pfStartLine: "시작",
+    },
+  };
+  function t() { return I18N[document.documentElement.lang === "ko" ? "ko" : "en"]; }
 
   function recompute(state) {
     const K = +els.K.value, T = +els.T.value, sigma = +els.sigma.value,
@@ -56,12 +111,91 @@
     document.getElementById("rd-sigma-be").textContent = sigmaBe.toFixed(4);
     document.getElementById("rd-LT").textContent = LT.toFixed(3);
     document.getElementById("rd-ST").textContent = ST.toFixed(3);
-    const verdict = LT > ST
-      ? `2x wins by ${fmtPct(LT / ST - 1)}`
-      : (LT < ST ? `1x wins by ${fmtPct(ST / LT - 1)}` : "tie");
+    const L = t();
+    let verdict, state2x;
+    if (LT > ST)      { verdict = L.verdict2x(fmtPct(LT / ST - 1)); state2x = "2x"; }
+    else if (LT < ST) { verdict = L.verdict1x(fmtPct(ST / LT - 1)); state2x = "1x"; }
+    else              { verdict = L.tie;                            state2x = "tie"; }
     document.getElementById("rd-verdict").textContent = verdict;
+    const pill = document.getElementById("verdict-pill");
+    if (pill) pill.setAttribute("data-state", state2x);
 
     drawCurve(state, T, c, phi, beta);
+    drawPortfolio(state, K, T, sigma, c, phi, beta);
+  }
+
+  function drawPortfolio(state, K, T, sigma, c, phi, beta) {
+    const assetEl = document.getElementById("ctl-asset");
+    if (!assetEl) return;
+    const asset = parseAmount(assetEl.value);
+    const S0 = state.spot;
+    if (!(S0 > 0) || !(T > 0)) return;
+
+    const gross = K / S0;
+    const N = 80;
+    const times = new Array(N + 1);
+    const v1x = new Array(N + 1);
+    const v2x = new Array(N + 1);
+    for (let i = 0; i <= N; i++) {
+      const tau = i / N;
+      const tHere = tau * T;
+      const stock = Math.pow(gross, tau);
+      const qv = sigma * sigma * tHere;
+      const lev = Math.pow(gross, beta * tau) * Math.exp(
+        -0.5 * (beta * beta - beta) * qv
+        - (beta - 1) * c * tHere
+        - phi * tHere
+      );
+      times[i] = tHere;
+      v1x[i]   = asset * stock;
+      v2x[i]   = asset * lev;
+    }
+
+    const end1x = v1x[N];
+    const end2x = v2x[N];
+    const edge = end2x - end1x;
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set("pr-start", fmtCurrency(asset));
+    set("pr-1x",    fmtCurrency(end1x));
+    set("pr-2x",    fmtCurrency(end2x));
+    set("pr-edge",  fmtCurrencySigned(edge));
+    const edgeEl = document.getElementById("pr-edge");
+    if (edgeEl) {
+      edgeEl.classList.toggle("positive", edge > 0);
+      edgeEl.classList.toggle("negative", edge < 0);
+    }
+
+    const L = t();
+    const hoverFmt = currency === "KRW" ? "₩%{y:,.0f}" : "$%{y:,.0f}";
+    Plotly.react("plot-portfolio", [
+      {
+        x: [0, T], y: [asset, asset], mode: "lines",
+        line: {color: "#2a3441", dash: "dot", width: 1},
+        name: L.pfStartLine, hoverinfo: "skip",
+      },
+      {
+        x: times, y: v1x, mode: "lines", name: L.pf1xName,
+        line: {color: "#7a8696", width: 2},
+        hovertemplate: `t=%{x:.2f}y<br>1x=${hoverFmt}<extra></extra>`,
+      },
+      {
+        x: times, y: v2x, mode: "lines", name: L.pf2xName,
+        line: {color: "#7ce0a4", width: 3},
+        hovertemplate: `t=%{x:.2f}y<br>2x=${hoverFmt}<extra></extra>`,
+      },
+    ], {
+      xaxis: {title: L.pfTimeAxis, gridcolor: "#1f2731", zerolinecolor: "#2a3441"},
+      yaxis: {title: L.pfValueAxis, gridcolor: "#1f2731", zerolinecolor: "#2a3441",
+              tickformat: ",", tickprefix: currency === "KRW" ? "₩" : "$"},
+      template: "plotly_dark",
+      margin: {t: 18, l: 90, r: 20, b: 50},
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "rgba(0,0,0,0)",
+      font: {color: "#c2c9d4", family: "Inter, sans-serif"},
+      legend: {bgcolor: "rgba(0,0,0,0)", bordercolor: "#1f2731", borderwidth: 1,
+               x: 0.02, y: 0.98},
+      showlegend: true,
+    }, {responsive: true, displayModeBar: false});
   }
 
   function drawCurve(state, T, c, phi, beta) {
@@ -81,37 +215,83 @@
         x: sigmas, y: ratio, mode: "lines", name: `K=$${K} σ_be=${sigmaBe.toFixed(2)}`,
       };
     });
+    const L = t();
     traces.push({
-      x: [0, 2.5], y: [1, 1], mode: "lines", line: {color: "#888", dash: "dot"},
-      name: "tie", hoverinfo: "skip",
+      x: [0, 2.5], y: [1, 1], mode: "lines", line: {color: "#7a8696", dash: "dot"},
+      name: L.tieTrace, hoverinfo: "skip",
     });
+
+    // Snapshot marker: σ_60d (or σ at the largest available window),
+    // evaluated at the current K (slider) so the dot lives on its curve.
+    const sigNow = state.sigma_now || {};
+    const anchor = sigNow.d60 || sigNow.d120 || sigNow.d20;
+    if (anchor && typeof anchor.sigma === "number") {
+      const Kcur = +els.K.value;
+      const grossCur = Kcur / S0;
+      const qvNow = anchor.sigma * anchor.sigma * T;
+      const yNow = leveredTerminal(grossCur, qvNow, T, c, phi, beta) / grossCur;
+      traces.push({
+        x: [anchor.sigma], y: [yNow], mode: "markers",
+        marker: {size: 12, color: "#7ce0a4", line: {color: "#0a0e14", width: 2},
+                 symbol: "circle"},
+        name: L.todayMarker(anchor.window, anchor.sigma, Kcur),
+        hovertemplate: `σ=%{x:.3f}<br>L_T/L_0 ÷ S_T/S_0=%{y:.3f}<extra></extra>`,
+      });
+    }
+
     const reg = state.regimes || {};
     const shapes = [];
+    if (anchor && typeof anchor.sigma === "number") {
+      shapes.push({type: "line", xref: "x", yref: "paper",
+                   x0: anchor.sigma, x1: anchor.sigma, y0: 0, y1: 1,
+                   line: {color: "#7ce0a4", width: 1.5, dash: "solid"}});
+    }
     if (reg.low && reg.high) {
       shapes.push({type: "rect", xref: "x", yref: "paper",
                    x0: reg.low, x1: reg.high, y0: 0, y1: 1,
-                   fillcolor: "rgba(255,165,0,0.10)", line: {width: 0}});
+                   fillcolor: "rgba(124,224,164,0.08)", line: {width: 0}});
     }
     if (reg.base) {
       shapes.push({type: "line", xref: "x", yref: "paper",
                    x0: reg.base, x1: reg.base, y0: 0, y1: 1,
-                   line: {color: "orange", width: 1, dash: "dash"}});
+                   line: {color: "#7ce0a4", width: 1, dash: "dash"}});
     }
     Plotly.react("plot-curve", traces, {
-      title: `Breakeven curves at T=${T.toFixed(2)}y, β=${beta}`,
-      xaxis: {title: "realized annualized σ"},
-      yaxis: {title: "L_T/L_0  ÷  S_T/S_0"},
+      // Title intentionally omitted — slider outputs above already show T & β.
+      xaxis: {title: L.xAxis, gridcolor: "#1f2731", zerolinecolor: "#2a3441"},
+      yaxis: {title: L.yAxis, gridcolor: "#1f2731", zerolinecolor: "#2a3441"},
       shapes: shapes,
       template: "plotly_dark",
-      margin: {t: 40, l: 60, r: 20, b: 50},
+      margin: {t: 18, l: 60, r: 20, b: 50},
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "rgba(0,0,0,0)",
-      font: {color: "#e8e8e8"},
+      font: {color: "#c2c9d4", family: "Inter, sans-serif"},
+      legend: {bgcolor: "rgba(0,0,0,0)", bordercolor: "#1f2731", borderwidth: 1},
       showlegend: true,
-    }, {responsive: true, displaylogo: false});
+    }, {responsive: true, displayModeBar: false});
+  }
+
+  function paintSnapshot(state) {
+    // Spot lives in the header (build-time template substitution), not here.
+    const sn = state.sigma_now || {};
+    [20, 60, 120].forEach(w => {
+      const d = sn["d" + w];
+      const sig = document.getElementById("snap-sig" + w);
+      const pct = document.getElementById("snap-pct" + w);
+      const bar = document.getElementById("snap-bar" + w);
+      if (!d) {
+        if (sig) sig.textContent = "—";
+        if (pct) pct.textContent = "—";
+        return;
+      }
+      if (sig) sig.textContent = d.sigma.toFixed(2);
+      if (pct) pct.textContent = Math.round(d.pct * 100) + "th";
+      if (bar) bar.style.width = Math.max(2, Math.round(d.pct * 100)) + "%";
+    });
   }
 
   async function init() {
+    resolveEls();
     const state = (await loadInputs()) || {spot: 58, targets: [150, 450, 700]};
     if (state.spot) {
       // Re-anchor the K slider around the current spot
@@ -119,8 +299,33 @@
       els.K.value = Math.round(state.spot * 2.5);
       els["out-K"].textContent = els.K.value;
     }
+    paintSnapshot(state);
     ids.forEach(id => els[id].addEventListener("input", () => recompute(state)));
+
+    // Portfolio panel inputs: amount + currency toggle. Both feed into recompute
+    // (cheap — only redraws plot-portfolio, not the full surface).
+    const assetEl = document.getElementById("ctl-asset");
+    if (assetEl) assetEl.addEventListener("input", () => recompute(state));
+    document.querySelectorAll(".currency-toggle button").forEach(b => {
+      b.addEventListener("click", () => {
+        currency = b.dataset.cur === "KRW" ? "KRW" : "USD";
+        document.querySelectorAll(".currency-toggle button").forEach(o => {
+          o.classList.toggle("active", o.dataset.cur === currency);
+        });
+        recompute(state);
+      });
+    });
+
     recompute(state);
+
+    // i18n swaps innerHTML of containers, which can recreate child nodes (the
+    // snap-pct spans live inside translated snap-subs). Re-paint + recompute on
+    // every lang change so percentile values, verdict text, and Plotly labels
+    // all stay current.
+    document.addEventListener("langchange", () => {
+      paintSnapshot(state);
+      recompute(state);
+    });
   }
   document.addEventListener("DOMContentLoaded", init);
 
